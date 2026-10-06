@@ -1,6 +1,6 @@
 ---
 schema: 1
-status: proposed
+status: accepted
 date: 2026-10-06
 deciders: [jacob-petterle]
 scope: repo
@@ -72,8 +72,13 @@ flowchart LR
 
 — Jacob ([@jacob-petterle](https://github.com/jacob-petterle)), pairing session (typed answer to the publishing-surface question), 2026-10-06
 
-Ratification: pending. The decider's words land here verbatim, and
-`status:` flips to `accepted` in the same change.
+Ratification:
+
+> "cool, sounds good, please use our orchestrator skill or something to get
+> all of these things deployed as needed through all the various things: the
+> infrastructure, the ADRs, etc. And I'm ratifying everything ahead of time."
+
+— Jacob ([@jacob-petterle](https://github.com/jacob-petterle)), pairing session (typed message), 2026-10-06
 
 ## Consequences
 
@@ -88,5 +93,5 @@ Ratification: pending. The decider's words land here verbatim, and
 
 ## References
 
-- Record-carrying PR: none yet
+- Record-carrying PR: https://github.com/perimetercompute/specs/pull/1
 - Implementing PR: none expected

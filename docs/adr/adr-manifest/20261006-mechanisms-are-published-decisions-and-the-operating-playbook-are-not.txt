@@ -1,1 +1,1 @@
-c676d51c02fa4cbbc5a74c13779a65e38fea2ed26ad40225d30bcb848e164fb1  docs/adr/20261006-mechanisms-are-published-decisions-and-the-operating-playbook-are-not.md
+27ec634f4a1f5ebd0f88f55cd8675016d304b63b981917b06ad2eef38fe82d79  docs/adr/20261006-mechanisms-are-published-decisions-and-the-operating-playbook-are-not.md

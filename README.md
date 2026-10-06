@@ -29,7 +29,8 @@ reasoning are the record
 
 A change to a spec is a decision. It rides a pull request together with a
 record in `docs/adr/`, which a human ratifies in their own words before the
-pull request can merge. The first record in this repository is the decision to
+pull request can merge, and CI fails a pull request that changes a `SPEC.md`
+without adding a record. The first record in this repository is the decision to
 publish it.
 
 ## License

@@ -32,7 +32,7 @@ jobs:
       - name: "layer 1: every record matches its hash and its schema"
         run: tools/adr-gate.sh
 
-      - name: "layer 2: no merged record or manifest entry is modified, renamed or deleted"
+      - name: "layer 2: no merged record or manifest entry is modified, renamed or deleted; a spec change rides a new record"
         # The ref names ride env vars, not inline interpolation: a ref name may
         # carry shell metacharacters, and interpolating one into the script
         # body would execute them.
@@ -92,6 +92,16 @@ jobs:
           if [ -n "$bad_manifest" ]; then
             echo "::error::adr-manifest/ entries may only be added. A corrected hash on a record still on its branch is an edit to an entry this PR added; an entry on main is frozen (docs/adr/README.md rule 6):"
             echo "$bad_manifest"; exit 1
+          fi
+          # A spec is living text, edited in place. The reason for each edit is
+          # a decision, so a change to any <spec>/SPEC.md rides a new record.
+          spec_changes="$(git diff --name-only "$base" HEAD -- ':(glob)*/SPEC.md')"
+          if [ -n "$spec_changes" ]; then
+            new_records="$(git diff --name-only --diff-filter=A "$base" HEAD -- ':(glob)docs/adr/2*.md')"
+            if [ -z "$new_records" ]; then
+              echo "::error::a change to a spec rides a NEW record in docs/adr/ that says why (README, Changing a spec). Draft it status: proposed and the decider ratifies it on this PR:"
+              echo "$spec_changes"; exit 1
+            fi
           fi
 
       - name: "surface awaiting-ratification records on the PR"

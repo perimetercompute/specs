@@ -1,0 +1,1 @@
+27ec634f4a1f5ebd0f88f55cd8675016d304b63b981917b06ad2eef38fe82d79  docs/adr/20261006-mechanisms-are-published-decisions-and-the-operating-playbook-are-not.md

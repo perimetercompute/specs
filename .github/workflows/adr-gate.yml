@@ -1,0 +1,144 @@
+# The three layers of the append-only decision log (rules: docs/adr/README.md).
+# Layer 1 is the same script a laptop runs. Layer 2 is a git diff against the
+# merge-base, which nothing inside a PR can forge. Layer 3 is layer 1's script
+# in git mode, where a `status: proposed` record fails instead of being
+# reported. No layer carries an event guard beyond what it needs, so a merge
+# queue or a direct push cannot admit what a pull-request-only step would miss.
+name: adr-gate
+
+on:
+  pull_request:
+  merge_group:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write # the awaiting-ratification comment only
+
+concurrency:
+  group: adr-gate-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  adr-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: "layer 1: every record matches its hash and its schema"
+        run: tools/adr-gate.sh
+
+      - name: "layer 2: no merged record or manifest entry is modified, renamed or deleted"
+        # The ref names ride env vars, not inline interpolation: a ref name may
+        # carry shell metacharacters, and interpolating one into the script
+        # body would execute them.
+        env:
+          BASE_REF: ${{ github.base_ref || github.event.merge_group.base_ref }}
+          EVENT_BEFORE: ${{ github.event.before }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "pull_request" ] || [ "$EVENT_NAME" = "merge_group" ]; then
+            # A merge group's event.before is empty; the merge base against the
+            # base ref covers every entry in the group, not only the last.
+            base="$(git merge-base "origin/${BASE_REF#refs/heads/}" HEAD)"
+          else
+            # A push to main: event.before, not HEAD^, because a multi-commit
+            # push could hide a rewrite in an earlier commit. Fall back on
+            # branch creation (all zeros) or a force-push whose old tip is gone.
+            base="$EVENT_BEFORE"
+            if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ] \
+              || ! git cat-file -e "$base^{commit}" 2>/dev/null; then
+              # A root commit has no parent: diff against the empty tree, so a
+              # repository's very first push is judged as all additions.
+              base="$(git rev-parse --verify -q HEAD^ || git hash-object -t tree /dev/null)"
+            fi
+          fi
+          # MDRT, not MDR: replacing a record with a symlink is a type change.
+          # Every docs/adr/ path is frozen, central and per-package alike; only
+          # the central README and the manifest DIRECTORY (append-checked
+          # below) are editable. Vendored third_party/ trees are not this log.
+          bad="$(git diff --name-status --diff-filter=MDRT "$base" HEAD -- \
+            ':(glob,icase)**/docs/adr/**' \
+            ':(exclude)docs/adr/README.md' \
+            ':(exclude,glob)docs/adr/adr-manifest/**' \
+            ':(exclude,icase)third_party/**')"
+          if [ -n "$bad" ]; then
+            echo "::error::ADRs are append-only. Restore these files; a change of mind is a NEW record with 'supersedes: <id>'. Reverting a PR that carried a record? Revert the code only (docs/adr/README.md, Operating notes)."
+            echo "$bad"; exit 1
+          fi
+          # Every file under any docs/adr/ is a record registered in the central
+          # manifest. git ls-files sees the whole tree, so a brand-new
+          # per-package docs/adr/ is covered the moment it is tracked.
+          adr_files="$(git ls-files -- ':(glob,icase)**/docs/adr/**' \
+            ':(exclude)docs/adr/README.md' ':(exclude,glob)docs/adr/adr-manifest/**' \
+            ':(exclude,icase)third_party/**')"
+          uncovered=""
+          while IFS= read -r f; do
+            [ -n "$f" ] || continue
+            entry="docs/adr/adr-manifest/$(basename "$f" .md).txt"
+            [ -f "$entry" ] && awk -v p="$f" '$2 == p {found=1} END {exit !found}' "$entry" || uncovered="${uncovered}${f}"$'\n'
+          done <<<"$adr_files"
+          if [ -n "$uncovered" ]; then
+            echo "::error::every file under a docs/adr/ dir must be a record registered in the central manifest (docs/adr/README.md rules 3 and 6): shasum -a 256 <path> > docs/adr/adr-manifest/<id>.txt"
+            printf '%s' "$uncovered"; exit 1
+          fi
+          # Manifest entries may be added, never modified, renamed or deleted.
+          bad_manifest="$(git diff --name-status --diff-filter=MDRT "$base" HEAD -- 'docs/adr/adr-manifest')"
+          if [ -n "$bad_manifest" ]; then
+            echo "::error::adr-manifest/ entries may only be added. A corrected hash on a record still on its branch is an edit to an entry this PR added; an entry on main is frozen (docs/adr/README.md rule 6):"
+            echo "$bad_manifest"; exit 1
+          fi
+
+      - name: "surface awaiting-ratification records on the PR"
+        # Runs BEFORE the step that blocks: a failing step aborts the job, and
+        # blocking first would cost a proposed PR the very comment that tells
+        # its author what to do next.
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          marker='<!-- adr-ratification -->'
+          adr_md="$(git ls-files -- ':(glob,icase)**/docs/adr/2*.md' ':(exclude,icase)third_party/**')"
+          proposed=""
+          if [ -n "$adr_md" ]; then
+            proposed="$(xargs -r grep -l '^status: proposed' 2>/dev/null <<<"$adr_md" || true)"
+          fi
+          if [ -n "$proposed" ]; then
+            while IFS= read -r f; do
+              n="$(grep -n '^status: proposed' "$f" | head -1 | cut -d: -f1)"
+              echo "::notice file=$f,line=$n::status: proposed — the red check is the DESIGNED pre-ratification state. The decider ratifies in a PR comment; the author flips this to accepted."
+            done <<<"$proposed"
+            body="$marker
+          ## ⏳ ADR awaiting ratification
+
+          The red \`adr-gate\` check is the **designed** pre-ratification state, not a breakage. Expected red is the layer 3 step only; **anything else red is a real failure.**
+
+          Record(s): $(while IFS= read -r r; do [ -n "$r" ] || continue; printf "\`%s\` " "$r"; done <<<"$proposed")
+
+          - **Decider:** reply to this PR with the decision in your own words.
+          - **Author:** quote the reply verbatim (with its permalink) under Human intent, flip \`status: proposed → accepted\`, fill the References, re-hash the manifest entry, push.
+
+          Rules: \`docs/adr/README.md\`."
+          else
+            body="$marker
+          ✅ No records awaiting ratification on this PR."
+          fi
+          cid="$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" --paginate \
+            --jq "[.[] | select(.body | startswith(\"$marker\")) | .id][0] // empty")"
+          if [ -n "$cid" ]; then
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$cid" -f body="$body" > /dev/null
+          elif [ -n "$proposed" ]; then
+            gh api "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" -f body="$body" > /dev/null
+          fi
+
+      - name: "layer 3: no 'status: proposed' record reaches main"
+        env:
+          ADR_GATE_GIT_MODE: "1"
+        run: tools/adr-gate.sh

@@ -1,0 +1,1 @@
+0d8c8e09b6a6a732b19b5d3d3a7f667aab6c0e9f32b4ac25235bbfa27807879f  docs/adr/20261006-the-adr-mechanism-is-published-as-a-spec-in-a-public-specs-repository.md

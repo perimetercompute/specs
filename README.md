@@ -12,10 +12,16 @@ conforming implementation of every spec it publishes.
 
 Its decisions are records in [`docs/adr/`](docs/adr), registered in
 [`docs/adr/adr-manifest/`](docs/adr/adr-manifest) and gated by
-[`tools/adr-gate.sh`](tools/adr-gate.sh) and
-[`.github/workflows/adr-gate.yml`](.github/workflows/adr-gate.yml). The claim
-is Level 2 of the append-only-adr spec. To adopt that spec, copy those three
-paths and the rules document at [`docs/adr/README.md`](docs/adr/README.md).
+[`tools/adr-gate.sh`](tools/adr-gate.sh) and two workflows:
+[`.github/workflows/adr-gate.yml`](.github/workflows/adr-gate.yml) runs in the
+pull request, and
+[`.github/workflows/adr-gate-trusted.yml`](.github/workflows/adr-gate-trusted.yml)
+is required by an organization ruleset from the default branch, so a pull
+request cannot rewrite the check that judges it. The claim is Level 2 of the
+append-only-adr spec. To adopt that spec, copy the manifest directory, the
+script, both workflows and the rules document at
+[`docs/adr/README.md`](docs/adr/README.md), then require the trusted workflow
+from your default branch.
 
 ## What is published here
 

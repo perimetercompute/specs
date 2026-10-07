@@ -16,7 +16,7 @@ that followed, the same day, was what a specs repository may hold before it
 leaks what makes the company fast, since a repository of how we operate
 "essentially codifies how our business works".
 
-As of 2026-10-06 the private monorepo holds 164 records of architecture,
+As of 2026-10-06 The private monorepo holds 164 records of architecture,
 vendors, sites, credentials and posture, and an operating model in which
 agents write most of the code under a model policy, decision tiers, an
 orchestrator and a reviewer ensemble. None of that is in this repository. The

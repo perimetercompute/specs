@@ -32,19 +32,23 @@ jobs:
       - name: "the gate script, from the default branch"
         env:
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        # The full remote-tracking ref, never `origin/<branch>`: git resolves an
+        # abbreviated name through refs/tags/ first, so a tag named
+        # `origin/main` would hand both the script and the diff base to
+        # whoever pushed it. Resolved once; layer 2 reuses the SHA.
         run: |
           set -euo pipefail
-          git show "origin/$DEFAULT_BRANCH:tools/adr-gate.sh" > "$RUNNER_TEMP/adr-gate.sh"
+          base_tip="$(git rev-parse --verify "refs/remotes/origin/${DEFAULT_BRANCH}^{commit}")"
+          echo "BASE_TIP=$base_tip" >> "$GITHUB_ENV"
+          git show "$base_tip:tools/adr-gate.sh" > "$RUNNER_TEMP/adr-gate.sh"
 
       - name: "layer 1: every record matches its hash and its schema"
         run: bash "$RUNNER_TEMP/adr-gate.sh"
 
       - name: "layer 2: no merged record or manifest entry is modified, renamed or deleted; a spec change rides a new record"
-        env:
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           set -euo pipefail
-          base="$(git merge-base "origin/$DEFAULT_BRANCH" HEAD)"
+          base="$(git merge-base "$BASE_TIP" HEAD)"
           # MDRT, not MDR: replacing a record with a symlink is a type change.
           bad="$(git diff --name-status --diff-filter=MDRT "$base" HEAD -- \
             ':(glob,icase)**/docs/adr/**' \

@@ -7,7 +7,7 @@
 | Status | draft 1 |
 | Record format this edition specifies | `schema: 1` |
 | Conformance keywords | MUST, MUST NOT, SHOULD, SHOULD NOT, MAY, as in RFC 2119 |
-| Reference implementation | this repository: `docs/adr/`, `tools/adr-gate.sh`, `.github/workflows/adr-gate.yml` (non-normative, Appendix A) |
+| Reference implementation | this repository: `docs/adr/`, `tools/adr-gate.sh`, `.github/workflows/adr-gate.yml`, `.github/workflows/adr-gate-trusted.yml` (non-normative, Appendix A) |
 
 ## 1. The problem
 
@@ -243,8 +243,12 @@ registry entry together. An implementation MUST therefore run at least one
 **history-aware** check that compares the change against the merge-base of the
 default branch, which nothing inside the change can forge, and that check MUST
 run on every path to the default branch: pull request, merge queue and direct
-push alike. A **hermetic** check that needs no history SHOULD also exist, so
-an author catches accidents before a change is opened.
+push alike. The history-aware check MUST run as the default branch defines it:
+both the script and the workflow that runs it come from the default branch,
+never from the change, because a check whose definition the change carries can
+be rewritten by the change it judges. A **hermetic** check that needs no
+history SHOULD also exist, so an author catches accidents before a change is
+opened.
 
 ### 8.2 The one split assertion
 
@@ -293,7 +297,7 @@ name the fix.
 | Level | Name | Requires |
 |---|---|---|
 | 1 | **Logged** | §4 to §7 followed by convention; no gate |
-| 2 | **Gated** | Level 1, plus §8: a hermetic and a history-aware check, the history-aware one on every path to the default branch |
+| 2 | **Gated** | Level 1, plus §8: a hermetic and a history-aware check, the history-aware one on every path to the default branch and run as the default branch defines it |
 | 3 | **Bridged** | Level 2, plus §9.1: every rule with a trade-off on the rule surface cites its record |
 
 A repository claiming a level SHOULD say so in its rules document and name
@@ -340,11 +344,13 @@ This repository conforms at Level 2. Its own decisions are records in
 | `docs/adr/README.md` | the rules as applied here, the record template, the partial-supersession table |
 | `docs/adr/adr-manifest/<id>.txt` | §4.4, one `sha256  path` line per record |
 | `tools/adr-gate.sh` | the hermetic layer of §8; the same script in git mode is the `proposed` assertion of §8.2 |
-| `.github/workflows/adr-gate.yml` | the history-aware layer of §8.1 as a diff against the merge-base on pull request, merge group and push; the awaiting-ratification comment of §6.4 |
+| `.github/workflows/adr-gate-trusted.yml` | the history-aware layer of §8.1 as the default branch defines it: the default branch's script, run against the change's tree with a read-only token on pull request and merge group, and required by an organization ruleset from the default branch |
+| `.github/workflows/adr-gate.yml` | the same layers from the change's own copy, plus the push leg of §8.1 and the awaiting-ratification comment of §6.4 |
 
-An adopter copies those three paths, writes a first record from the template
-with `status: proposed`, registers it, and opens the change; it is red until a
-human ratifies it in their own words.
+An adopter copies those five paths, requires the trusted workflow from the
+default branch, writes a first record from the template with `status:
+proposed`, registers it, and opens the change; it is red until a human
+ratifies it in their own words.
 
 ## Appendix B (non-normative): one deployment after ten weeks
 

@@ -1,15 +1,14 @@
 # Architecture Decision Records
 
-This directory is a conforming implementation of the
-[append-only-adr spec](../../append-only-adr/SPEC.md), at Level 2. The rules
-below are the spec's requirements as this repository applies them; the
-reasoning behind each lives in the spec.
+The append-only decision log for this repository, and a conforming
+implementation of the [append-only-adr spec](../../append-only-adr/SPEC.md) at
+Level 2. The rules below are the spec's requirements as this repository
+applies them; the reasoning behind each lives in the spec.
 
-The append-only decision log for this repository. A record is the history of
-deciding: the context, the options, the consequences, and the decider's exact
-words. Once a record merges to `main` it is immutable. The log's value is that
-a reference into it can never dangle and its bytes can never be quietly
-rewritten.
+A record is the history of deciding: the context, the options, the
+consequences, and the decider's exact words. Once a record merges to `main` it
+is immutable. The log's value is that a reference into it can never dangle and
+its bytes can never be quietly rewritten.
 
 **Records are the one surface in the repository that proves a human decided
 something.** Code, comments, tickets and agent instructions are mostly
@@ -29,9 +28,9 @@ current mechanics. Read a record as intent.
    a collision is frozen forever. The filename date is the day the draft was
    minted; front-matter `date:` is when the human decided.
 3. **A record lives directly in a `docs/adr/` directory.** The central one
-   for anything cross-cutting; a package's own `<pkg>/docs/adr/` when exactly
-   one package owns the decision. Nothing else lives in an ADR directory,
-   because everything there freezes on merge.
+   for anything cross-cutting; a component's own `<component>/docs/adr/` when
+   exactly one component owns the decision. Nothing else lives in an ADR
+   directory, because everything there freezes on merge.
 4. **Agents never decide.** An agent drafts `status: proposed` on a branch and
    stops. The decider's ratifying words land verbatim under Human intent, the
    status flips to `accepted` in the same PR, and only then is the PR
@@ -74,11 +73,17 @@ record; one ratified line of Human intent is enough.
   them.
 - **A record can be superseded in part, and only the newer record can say
   so.** The newer record names the retired clause where a reader of it will
-  see it before acting. The older record's other decisions stand.
+  see it before acting. The older record's other decisions stand. Searching
+  for the older id finds the newer record but not which clause it retired, so
+  every partial supersession is listed here:
+
+| Older record | Clause retired | Retired by |
+|---|---|---|
+| `20261006-the-adr-mechanism-is-published-as-a-spec-in-a-public-specs-repository` | "The repository itself conforms to every spec it publishes"; each spec now says in its Appendix A how this repository demonstrates it | `20261016-organizations-as-code-is-published-and-this-repository-demonstrates-it-as-a-governed-resource` |
 
 ## When to write
 
-**A record is for a true architectural trade-off.** If the code decides it
+**A record is for a true trade-off.** If the code decides it
 and the code is clear, a record makes things worse: the code keeps moving, the
 frozen record cannot follow, and the reader now holds two sources that
 disagree. Three kinds of decision qualify because nothing in code can carry
@@ -211,14 +216,19 @@ the last moment the bytes are editable.
 
 ## Enforcement
 
-Three layers, deliberately different in kind. The gate script is
-`tools/adr-gate.sh`; the workflow is `.github/workflows/adr-gate.yml`.
+Three layers, deliberately different in kind, run by two workflows over one
+script, `tools/adr-gate.sh`.
+
+| Workflow | Runs | Why both exist |
+|---|---|---|
+| `.github/workflows/adr-gate.yml` | the pull request's own copy of the script and the workflow, on pull request, merge group and push to `main`; posts the awaiting-ratification comment | the push leg and the comment, which need the push event and a write token |
+| `.github/workflows/adr-gate-trusted.yml` | `main`'s copy of the script against the pull request's tree, with a read-only token, on pull request and merge group; an organization ruleset requires it as it stands on `main` | a pull request can rewrite the copy it carries, so only this one judges a pull request that edits the gate |
 
 | Layer | Where it runs | What it catches | What it cannot |
 |---|---|---|---|
 | 1. The hermetic gate | every laptop and CI run of `tools/adr-gate.sh` | an edited byte, a deleted record, an unregistered file, a broken schema, a paraphrased Human intent | an edit that also rewrites its manifest entry; it cannot see git |
-| 2. The git diff | CI, against the merge-base, on pull request, merge group and push | any modification, rename, type change or deletion under any `docs/adr/`, and any change to an existing manifest entry | nothing a sandbox can forge: the merge-base is not inside the PR |
-| 3. The same script under `ADR_GATE_GIT_MODE=1` | CI, same events | a `status: proposed` record on its way to `main` | |
+| 2. The git diff | both workflows, against the merge-base | any modification, rename, type change or deletion under any `docs/adr/`; any change to an existing manifest entry; a `SPEC.md` change with no new record | nothing in the trusted workflow: the merge-base and `main`'s copy of the check are both outside the pull request |
+| 3. The same script under `ADR_GATE_GIT_MODE=1` | both workflows | a `status: proposed` record on its way to `main` | |
 
 Layer 1 reports `proposed` without failing, because the drafting flow
 requires that state on a branch. Failing it hermetically would make the

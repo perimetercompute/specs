@@ -1,0 +1,1 @@
+1efe750bb499991c26e9a0f801963216930e6fed77986ce03e83cd4e9d1cd456  docs/adr/20261016-organizations-as-code-is-published-and-this-repository-demonstrates-it-as-a-governed-resource.md

@@ -105,7 +105,7 @@ Ratification: awaiting the decider's own words on the pull request.
 
 ## References
 
-- Record-carrying PR: pending
-- Implementing PR: pending
+- Record-carrying PR: https://github.com/perimetercompute/specs/pull/7
+- Implementing PR: https://github.com/perimetercompute/specs/pull/7
 - [`20261006-the-adr-mechanism-is-published-as-a-spec-in-a-public-specs-repository`](https://github.com/perimetercompute/specs/blob/238c400245301501a688481a8810fc2e76daaca9/docs/adr/20261006-the-adr-mechanism-is-published-as-a-spec-in-a-public-specs-repository.md)
 - [`20261006-mechanisms-are-published-decisions-and-the-operating-playbook-are-not`](https://github.com/perimetercompute/specs/blob/238c400245301501a688481a8810fc2e76daaca9/docs/adr/20261006-mechanisms-are-published-decisions-and-the-operating-playbook-are-not.md)

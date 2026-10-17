@@ -78,7 +78,7 @@ decider's own words on the pull request.
 
 ## References
 
-- Record-carrying PR: pending
-- Implementing PR: pending
+- Record-carrying PR: https://github.com/perimetercompute/specs/pull/7
+- Implementing PR: https://github.com/perimetercompute/specs/pull/7
 - https://github.com/perimetercompute/specs/pull/2
 - https://github.com/perimetercompute/specs/pull/5

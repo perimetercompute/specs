@@ -40,10 +40,11 @@ resources an implementation governs.
 ## Decision
 
 We will publish `org-as-code/SPEC.md`, a normative, tool-agnostic
-specification for an organization that agents operate, built on two ideas. The organization itself is code, adopted
-as it is rather than recreated. And every setting the provider offers is
-either set in code or excluded with a written reason, which a gate proves,
-with a scheduled check against live as the backstop. The levels are Adopted,
+specification for an organization that agents operate, built on two ideas.
+The organization itself is code, adopted as it is rather than recreated. And
+every setting the provider offers is either set in code or excluded with a
+written reason, which a gate proves, with a scheduled check against live as
+the backstop. The levels are Adopted,
 Decided and Bridged; the last ties a setting that trades something away to
 the decision record that made the trade, as the
 [append-only-adr](https://github.com/perimetercompute/specs/blob/238c400245301501a688481a8810fc2e76daaca9/append-only-adr/SPEC.md)

@@ -28,6 +28,10 @@ away, the answer was two things: most teams do not treat their organization
 as code at all, and the few who do write down only the settings someone
 thought of.
 
+On 2026-10-19 Jacob named the problem behind the ask: agents cannot easily
+manage an organization run by clicking in consoles. It is the premise of the
+first spec too, a repository that agents write.
+
 The first spec's record decided that "the repository itself conforms to every
 spec it publishes". A repository can run a decision log, but it cannot run an
 organization, so for this spec the repository can only be one of the
@@ -36,7 +40,7 @@ resources an implementation governs.
 ## Decision
 
 We will publish `org-as-code/SPEC.md`, a normative, tool-agnostic
-specification built on two ideas. The organization itself is code, adopted
+specification for an organization that agents operate, built on two ideas. The organization itself is code, adopted
 as it is rather than recreated. And every setting the provider offers is
 either set in code or excluded with a written reason, which a gate proves,
 with a scheduled check against live as the backstop. The levels are Adopted,
@@ -114,6 +118,15 @@ ADR", left as spoken.)
 > spec repo"
 
 — Jacob ([@jacob-petterle](https://github.com/jacob-petterle)), pairing session (typed message; typos left as typed), 2026-10-19
+
+> "the problem is you can't manage easily with agents an organization that is
+> quick ops, right? That's ultimately the problem and why we chose to do
+> this. Similar to the ADR, right?"
+
+("quick ops" is most likely the speech-to-text rendering of "click ops", left
+as spoken.)
+
+— Jacob ([@jacob-petterle](https://github.com/jacob-petterle)), pairing session (voice; speech-to-text output), 2026-10-19
 
 Ratification: awaiting the decider's own words on the pull request.
 

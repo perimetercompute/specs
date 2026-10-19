@@ -7,7 +7,7 @@ tool-agnostic, and says in its Appendix A how this repository demonstrates it.
 | Spec | What it specifies | Status | How this repository demonstrates it |
 |---|---|---|---|
 | [append-only-adr](append-only-adr/SPEC.md) | the human-ratified, append-only decision log for a repository that agents write | draft 1 | conforms at Level 2: its own decisions are records gated by the implementation it ships |
-| [org-as-code](org-as-code/SPEC.md) | managing an organization's settings as code: adopted rather than recreated, every setting decided, and checked against live | draft 1 | governed: this repository is a resource of a private program at Level 2 |
+| [org-as-code](org-as-code/SPEC.md) | the settings of an organization that agents operate, as code: adopted rather than recreated, every setting decided, and checked against live | draft 1 | governed: this repository is a resource of a private program at Level 2 |
 
 ## Adopting a spec
 

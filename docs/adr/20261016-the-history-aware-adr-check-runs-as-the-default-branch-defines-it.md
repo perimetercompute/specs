@@ -1,7 +1,7 @@
 ---
 schema: 1
-status: proposed
-date: 2026-10-16
+status: accepted
+date: 2026-10-19
 deciders: [jacob-petterle]
 scope: append-only-adr
 supersedes: []
@@ -64,8 +64,14 @@ five paths and require that workflow from the default branch.
 
 — Jacob ([@jacob-petterle](https://github.com/jacob-petterle)), pairing session (typed message; typos left as typed), 2026-10-16
 
-The review those words asked for found this gap. Ratification: awaiting the
-decider's own words on the pull request.
+The review those words asked for found this gap.
+
+> "Otherwise, I think this looks good to publish"
+
+— Jacob ([@jacob-petterle](https://github.com/jacob-petterle)), pairing session (voice; speech-to-text output), 2026-10-19
+
+Those words ratify the pull request that carries this record and the
+org-as-code record together; the full message is quoted in that record.
 
 ## Consequences
 

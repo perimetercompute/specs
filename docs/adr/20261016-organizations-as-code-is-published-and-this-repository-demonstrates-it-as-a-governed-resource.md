@@ -1,7 +1,7 @@
 ---
 schema: 1
-status: proposed
-date: 2026-10-16
+status: accepted
+date: 2026-10-19
 deciders: [jacob-petterle]
 scope: repo
 supersedes: [20261006-the-adr-mechanism-is-published-as-a-spec-in-a-public-specs-repository]
@@ -137,7 +137,15 @@ as spoken.)
 
 — Jacob ([@jacob-petterle](https://github.com/jacob-petterle)), pairing session (voice; speech-to-text output), 2026-10-19
 
-Ratification: awaiting the decider's own words on the pull request.
+> "Okay, let's go ahead and Is that the right way to write this here?
+> Shouldn't they both argue and have a spec read like are they just different
+> like facets on like what could be a spec here Otherwise, I think this looks
+> good to publish"
+
+— Jacob ([@jacob-petterle](https://github.com/jacob-petterle)), pairing session (voice; speech-to-text output), 2026-10-19
+
+Those words ratify this record. The question in them is about the runbook's
+pointer rows, which the same pull request reworded before merge.
 
 ## Consequences
 

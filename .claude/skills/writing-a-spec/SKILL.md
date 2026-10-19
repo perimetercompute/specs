@@ -16,8 +16,8 @@ teaches it something, never ahead of one.
 |---|---|
 | What shape every spec has | [README.md](../../../README.md), "How a spec is written" |
 | What may be published, and what never | the record [`20261006-mechanisms-are-published-decisions-and-the-operating-playbook-are-not`](../../../docs/adr/20261006-mechanisms-are-published-decisions-and-the-operating-playbook-are-not.md) |
-| How a requirement argues: a reason on every line, an exact enforcement table, a lifecycle as a diagram, shipped code in Appendix A | [append-only-adr/SPEC.md](../../../append-only-adr/SPEC.md) |
-| How a spec reads: a rule in one sentence then one example, flat sections, short sentences, a problem stated for agents | [org-as-code/SPEC.md](../../../org-as-code/SPEC.md) |
+| How every spec argues: a reason on every line, an exact enforcement table, a lifecycle as a diagram, shipped code in Appendix A. The published spec that shows this facet best | [append-only-adr/SPEC.md](../../../append-only-adr/SPEC.md) |
+| How every spec reads: a rule in one sentence then one example, flat sections, short sentences, a problem stated for agents. The published spec that shows this facet best | [org-as-code/SPEC.md](../../../org-as-code/SPEC.md) |
 | How a record rides the pull request, and the gate it must pass | [docs/adr/README.md](../../../docs/adr/README.md), "The proposed → accepted flow"; `tools/adr-gate.sh` |
 | What the keywords mean | RFC 2119 |
 
@@ -68,6 +68,8 @@ teaches it something, never ahead of one.
 ## What to avoid
 
 - Restating a rule that lives at a pointer above. A copy drifts.
+- Copying one published spec's facet without the other's. A spec both
+  argues and reads; each published one only shows one facet best.
 - A requirement with no reason. The reader cannot tell a rule from a habit.
 - Requiring what the implementation does not do. The claims pass catches
   it, at the cost of a rewrite.

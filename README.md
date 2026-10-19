@@ -16,6 +16,18 @@ tool-agnostic, and says in its Appendix A how this repository demonstrates it.
 | append-only-adr | five paths: the rules document [`docs/adr/README.md`](docs/adr/README.md), the registry [`docs/adr/adr-manifest/`](docs/adr/adr-manifest), the gate [`tools/adr-gate.sh`](tools/adr-gate.sh), and the workflows [`adr-gate.yml`](.github/workflows/adr-gate.yml) and [`adr-gate-trusted.yml`](.github/workflows/adr-gate-trusted.yml). Then require the trusted workflow from the default branch, so a pull request cannot rewrite the check that judges it |
 | org-as-code | nothing to copy: the coverage gate reads each provider's own schema. Its §5 and Appendix A describe what to build |
 
+The specs meet at the decision log. A setting that trades something away
+cites the record that decided it, and this repository is governed under both.
+
+```mermaid
+flowchart LR
+    org["org-as-code<br/><i>an organization's settings, as code</i>"] -- "a trade-off cites<br/>its record (§8)" --> adr["append-only-adr<br/><i>decisions, as frozen records</i>"]
+    adr -- "its shipped gate judges<br/>this repository's records" --> repo["this repository"]
+    org -- "a private program manages<br/>this repository's settings" --> repo
+    classDef frozen fill:#1d9e7533,stroke:#0f6e56,stroke-width:2px
+    class adr frozen
+```
+
 ## How a spec is written
 
 Every spec has the same shape, so a reader who knows one can scan the next.
@@ -26,8 +38,9 @@ Every spec has the same shape, so a reader who knows one can scan the next.
 | 1. The problem | what breaks without the spec, and the shape of the answer as a diagram |
 | 2. Terms | the terms the requirements use, in one table |
 | 3. Principles | the few rules that decide a case the requirements are silent on |
-| Requirements | numbered sections of MUST and SHOULD, each with its reason |
+| Requirements | numbered sections of MUST and SHOULD, each with its reason. A section may open with its rule in one bold sentence and a non-normative example |
 | Enforcement | what a conforming gate rejects, one row per property |
+| The bridge | how the spec's artifacts cite the decision log; the top level requires it |
 | Conformance levels | named levels, each a set of sections, so an adopter can claim one honestly |
 | Operational considerations | what happens in practice: upgrades, reverts, renames, redaction |
 | Appendix A | the reference implementation, and how this repository demonstrates the spec |

@@ -67,13 +67,13 @@ flowchart LR
 | What | Decided |
 |---|---|
 | The spec | `org-as-code/SPEC.md`, draft 1, about the length of the first spec |
-| What it requires | adopt the organization (§4); decide every setting (§5); check it against live (§6); cite the decision behind a trade-off (§7) |
+| What it requires | adopt the organization (§4); decide every setting (§5); check it against live (§6); cite the decision behind a trade-off (§8) |
 | What it only advises | a human-read plan before each apply, the credential kept out of state and unmerged code, a way back that does not depend on the program (§10.2) |
 | What stays out | which tools and vendors the implementation runs on, account layout, cadences and specific values; the review tiers and agent routing of the operating playbook |
 | Familiar names | Terraform and Pulumi are named together, only as examples. GitHub, which already hosts this repository in public, is the running example |
 | The reference implementation | private, described by its shape in Appendix A. The program that manages its GitHub organization claims Level 2 |
 | How this repository demonstrates it | as a governed resource, whose live rules anyone can read through the forge's API |
-| The README | an index with a per-spec column for how this repository demonstrates it, adoption per spec, and the shape every spec shares |
+| The README | an index with a per-spec column for how this repository demonstrates it, adoption per spec, a diagram of where the specs meet, and the shape every spec shares |
 
 ### Options considered
 

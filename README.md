@@ -48,7 +48,9 @@ Every spec has the same shape, so a reader who knows one can scan the next.
 | Appendix C | how the spec relates to existing practice |
 
 The appendices are non-normative. Structure goes in a table or a diagram, and
-prose carries what a visual cannot.
+prose carries what a visual cannot. The order of work for writing one, and
+where each rule lives, is the runbook
+[`.claude/skills/writing-a-spec/SKILL.md`](.claude/skills/writing-a-spec/SKILL.md).
 
 ## What is published here
 

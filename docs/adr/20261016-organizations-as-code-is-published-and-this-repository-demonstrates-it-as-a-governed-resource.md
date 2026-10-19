@@ -79,6 +79,7 @@ flowchart LR
 | The reference implementation | private, described by its shape in Appendix A. The program that manages its GitHub organization claims Level 2 |
 | How this repository demonstrates it | as a governed resource, whose live rules anyone can read through the forge's API |
 | The README | an index with a per-spec column for how this repository demonstrates it, adoption per spec, a diagram of where the specs meet, and the shape every spec shares |
+| The runbook | `.claude/skills/writing-a-spec/SKILL.md`, draft 1: the order of work for the next spec and where each rule lives. It points at the rules and restates none, and is edited by the pull request that teaches it something |
 
 ### Options considered
 
@@ -126,6 +127,13 @@ ADR", left as spoken.)
 
 ("quick ops" is most likely the speech-to-text rendering of "click ops", left
 as spoken.)
+
+— Jacob ([@jacob-petterle](https://github.com/jacob-petterle)), pairing session (voice; speech-to-text output), 2026-10-19
+
+> "I'd love to like start to codify this as a skill and like how to write
+> these good specs we don't want to be over prescriptive right now this will
+> be like an evolving skill the skill should also not duplicate it to the
+> data should be pointers to data"
 
 — Jacob ([@jacob-petterle](https://github.com/jacob-petterle)), pairing session (voice; speech-to-text output), 2026-10-19
 

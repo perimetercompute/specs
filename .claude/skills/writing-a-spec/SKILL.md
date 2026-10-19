@@ -16,7 +16,8 @@ teaches it something, never ahead of one.
 |---|---|
 | What shape every spec has | [README.md](../../../README.md), "How a spec is written" |
 | What may be published, and what never | the record [`20261006-mechanisms-are-published-decisions-and-the-operating-playbook-are-not`](../../../docs/adr/20261006-mechanisms-are-published-decisions-and-the-operating-playbook-are-not.md) |
-| The exemplar readers find clear | [append-only-adr/SPEC.md](../../../append-only-adr/SPEC.md) |
+| How a requirement argues: a reason on every line, an exact enforcement table, a lifecycle as a diagram, shipped code in Appendix A | [append-only-adr/SPEC.md](../../../append-only-adr/SPEC.md) |
+| How a spec reads: a rule in one sentence then one example, flat sections, short sentences, a problem stated for agents | [org-as-code/SPEC.md](../../../org-as-code/SPEC.md) |
 | How a record rides the pull request, and the gate it must pass | [docs/adr/README.md](../../../docs/adr/README.md), "The proposed → accepted flow"; `tools/adr-gate.sh` |
 | What the keywords mean | RFC 2119 |
 
@@ -46,17 +47,17 @@ teaches it something, never ahead of one.
 6. **Review with readers who only read**, each a separate pass with its own
    brief:
    - *Cold read*: a competent engineer who has never seen the documents and
-     has ten minutes, scored against the exemplar. Ask what they would take
-     away and where they got lost.
+     has ten minutes, scored against the two published specs. Ask what they
+     would take away and where they got lost.
    - *Claims*: each MUST and SHOULD against the map from step 2. A rule the
      implementation does not meet is reworded, or the claim in Appendix A is
      scoped to the part that does; it is never left standing.
    - *Leak*: the whole diff against the publish test.
    - *Second pass*: the fix diff alone, so a fix does not reopen a finding.
-7. **Measure against the exemplar**: words outside code fences, defined
-   terms, cross-references, average sentence length, mentions of the reader
-   the spec serves. There is no target. Twice the exemplar on any one of
-   them is a signal to cut.
+7. **Measure against both published specs**: words outside code fences,
+   defined terms, cross-references, requirements carrying a reason, examples,
+   average sentence length, mentions of the reader the spec serves. There is
+   no target. Twice either spec on any one of them is a signal to cut.
 8. **Mechanical checks**: no line over 80 characters outside tables, links
    and diagram nodes; a numbered list keeps its item count after a reflow;
    the file renders on the forge (`gh api -X POST /markdown`).

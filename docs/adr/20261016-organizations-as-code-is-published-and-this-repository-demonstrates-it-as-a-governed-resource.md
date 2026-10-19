@@ -61,7 +61,8 @@ flowchart LR
 |---|---|
 | The spec | `org-as-code/SPEC.md`, draft 1 |
 | Scope | organizations, accounts and admin consoles; its coverage, drift and credential sections SHOULD apply to every program |
-| What stays out | the tools and vendors the implementation runs on, account layout, cadences and specific values; who approves beyond "a human approver"; the review tiers and agent routing of the operating playbook. The forge that hosts this repository is named only where this repository is the example |
+| What stays out | which tools and vendors the implementation runs on, account layout, cadences and specific values; who approves beyond "a human approver"; the review tiers and agent routing of the operating playbook |
+| Familiar names | Terraform and Pulumi are named together, only as examples of the two common tool styles. GitHub, which already hosts this repository in public, is the running example |
 | The reference implementation | private, described by its shape in Appendix A, claiming Level 2; which Level 3 requirements it misses is not published |
 | How this repository demonstrates it | as a governed resource, whose live rules anyone can read through the forge's API |
 | The README | an index with a per-spec column for how this repository demonstrates it, adoption per spec, and the shape every spec shares |

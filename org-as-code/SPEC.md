@@ -1,54 +1,49 @@
 # Organizations as code
 
-**A specification for declaring, adopting and gating the organizations,
-accounts and admin consoles that everything else runs inside.**
+**A specification for managing the organizations everything else runs inside (the GitHub organization, the cloud organization, the identity provider, the SaaS admin consoles) as code.**
 
 | | |
 |---|---|
 | Status | draft 1 |
-| Applies to | every program that manages an organization (§2); for any other infrastructure program, every requirement in §5, §6 and §9 is a SHOULD |
+| Applies to | every program that manages an organization; for any other infrastructure program, every requirement in §4, §5 and §8 is a SHOULD |
+| Tools | any declarative infrastructure tool. Terraform and Pulumi appear only as examples of the two common styles |
 | Conformance keywords | MUST, MUST NOT, SHOULD, SHOULD NOT, MAY, as in RFC 2119 |
 | Reference implementation | private; this repository is one of the resources it governs (non-normative, Appendix A) |
 
 ## 1. The problem
 
-Infrastructure as code is a settled shape for an application's database or a
-cluster. A program declares it, a pipeline creates it, a second copy rehearses
-every change, and a mistake costs one application.
+Most infrastructure as code manages things the code created: a database, a
+cluster, a bucket. A pipeline creates them, a staging copy rehearses each
+change, and a mistake costs one application.
 
-The organizations everything runs inside break each of those assumptions: the
-source-control organization, the cloud organization and its accounts, the
-identity provider, the DNS account, the observability and SaaS workspaces.
-They were made by hand before any program existed. There is usually one of
-each, so nothing rehearses a change. Each carries hundreds of settings a
-vendor defaulted, and an admin can change any of them in a console. They host
-the repository, the pipeline and the credential that manage them. And that
-credential is the most powerful one the company holds.
+The organizations those things live in are different. Take a company's GitHub
+organization, the example used throughout this spec. Someone created it by
+hand years before any code. There is only one, with a couple of hundred
+settings GitHub defaulted, and any admin can change them in the web console.
 
-| Ordinary infrastructure assumes | An organization instead | So this specification requires |
+| Ordinary infrastructure assumes | An organization is | So this spec says |
 |---|---|---|
-| the program created it | it existed first, made by hand | adoption, never creation (§7.1) |
-| a second copy to rehearse in | it is a singleton; the plan is the only rehearsal | a human reads the plan, and the apply runs exactly that plan (§8.2) |
-| the defaults are fine | hundreds of vendor defaults, and an undeclared setting is invisible to every diff | every input declared or excluded with a reason (§5) |
-| the program is the only writer | admins edit it in a console, and the tool's cached state never sees the edit | every diff reads live (§6) |
-| the pipeline sits outside what it manages | it hosts the repository, pipeline and credential that manage it | lockout analysis and a way back that does not depend on the program (§7.5, §7.6) |
-| its credential is ordinary | its credential can rewrite identity and access for everything | the credential is never data, and unmerged code cannot reach it (§9) |
+| the defaults are fine | hundreds of vendor defaults nobody chose | decide every setting (§4) |
+| the code is the only writer | edited by admins in a console | compare against live, not the tool's notes (§5) |
+| the code created it | made by hand first | adopt what exists (§6) |
+| a staging copy rehearses the change | a singleton | apply only the plan a human approved (§7) |
+| its credential is ordinary | guarded by the most powerful credential you hold | keep that credential out of state and out of pull requests (§8) |
+| the pipeline sits outside it | the host of its own pipeline | do not lock yourself out (§9) |
 
 ```mermaid
 flowchart LR
-    reg["registry<br/><i>every program, its class</i>"] --> decl["declare<br/><i>every input set,<br/>or excluded with a reason</i>"]
-    decl --> cov{"coverage gate"}
-    cov -- red --> decl
-    cov -- green --> merge["merge"]
-    merge --> plan["plan, read against LIVE"]
-    plan --> human["a human reads the plan"]
-    human --> apply["apply exactly<br/>the approved plan"]
-    apply --> drift["scheduled diff against live"]
-    drift -- "console edit" --> red["red, reported,<br/>never auto-reverted"]
-    red --> decl
+    decide["decide every setting<br/><i>set it, or exclude it<br/>with a reason</i>"] --> gate{"coverage gate"}
+    gate -- "a setting nobody decided" --> decide
+    gate -- green --> merge["merge"]
+    merge --> plan["plan against live"]
+    plan --> human["a human approves"]
+    human --> apply["apply exactly<br/>what was approved"]
+    apply --> drift["drift check<br/>on a schedule"]
+    drift -- "an admin edited<br/>the console" --> red["red and reported,<br/>never auto-reverted"]
+    red --> decide
     classDef gate fill:#1d9e7533,stroke:#0f6e56,stroke-width:2px
     classDef red fill:#e5484d33,stroke:#c62a2f,stroke-width:2px
-    class cov,human gate
+    class gate,human gate
     class red red
 ```
 
@@ -56,513 +51,428 @@ flowchart LR
 
 | Term | Meaning |
 |---|---|
-| **Organization** | a tenant-level administrative surface that holds identity, access, policy or billing for other resources: a source-control organization, a cloud organization or account, an identity provider, a DNS account, an observability or SaaS workspace |
-| **Program** | the code that declares one organization's desired state, with its own recorded state and its own apply lane; a "stack" or "workspace" in some tools |
-| **Plan** | the tool's computed list of the resources an apply would create, update, replace or delete, and how; distinct from a vendor's **paid plan** |
-| **Default branch** | the branch a merge lands on; code that has not merged there is **unmerged code** |
-| **Gate** | any check that rejects a change, plan or apply violating this specification |
-| **Lane** | one automated pipeline path that plans, diffs, applies or scans a program; the **apply lane** is the one that applies it |
-| **Provider** | the plug-in through which a program reads and writes an organization's API |
-| **Input** | one settable field of one resource type in a provider's schema |
-| **Schema extract** | a vendored, version-pinned list of every resource type and input a provider exposes |
-| **Exclusion** | an input that a program deliberately does not manage, recorded with its reason |
-| **Waiver** | a whole resource type that a program deliberately does not manage, recorded with a cause (§5.3) |
-| **Coverage set** | for one provider, the schema extract, the declared inputs, the exclusions and the waivers, and the gate that checks them |
-| **Live state** | what the organization's API returns now |
-| **Recorded state** | what the tool last wrote down about the organization; a cache, never the truth |
-| **Drift** | any difference between what a program declares and live state |
-| **Adoption** | taking an existing resource under a program without recreating it |
-| **Class** | `app`, `shared` or `foundation`: who owns a program and how far a mistake reaches (§8.1) |
-| **Organization credential** | a credential that can administer an organization as a whole: its members, accounts or administrators, or who may administer it |
-| **Workload credential** | a credential scoped to the resources of one environment or one application, which cannot change who administers the organization |
-| **Break-glass** | the path that restores control when the apply lane is locked out |
-| **Registry** | the one list of every program, with its class and drift contract |
-| **Drift contract** | how a program's drift is checked: the environments diffed against live, and which live assertions run, and where |
-| **Live assertion** | a check, run by the program, of a fact the organization reports but no input sets |
+| **Organization** | an account that holds identity, access, policy or billing for other things: a GitHub organization, a cloud organization or account, an identity provider, a DNS account, an observability or SaaS workspace |
+| **Program** | the code that manages one organization: a Terraform root module, a Pulumi project |
+| **Provider** | the plug-in through which the tool talks to an organization's API |
+| **Setting** | one field a provider lets you set on one resource type, such as a GitHub organization's `default_repository_permission` |
+| **Schema** | the provider's own list of every resource type and setting it supports |
+| **State** | the tool's notes on what it last saw and did: Terraform's state file, Pulumi's checkpoint. A cache, never the truth |
+| **Live** | what the organization's API returns right now |
+| **Plan** | the tool's list of what an apply would create, change or delete: `terraform plan`, `pulumi preview` |
+| **Drift** | code and live disagree |
+| **Live assertion** | a read-only check, run by the program, of a fact the organization reports but no setting controls; if the fact is wrong, the run fails |
+| **Exclusion** | a setting the program deliberately leaves alone, written down with the reason |
+| **Admin credential** | a credential that can change who administers the organization: its members, accounts or administrators |
+| **Class** | `app`, `shared` or `foundation`: how far a mistake in a program reaches, which decides how it is applied (§7) |
+| **Registry** | one list of every program and how each is applied and checked (§10) |
 
 ## 3. Principles
 
-The requirements in §4 to §9 follow from six principles. Where a requirement
-is silent, the principles decide.
+Where a requirement is silent, these decide.
 
-1. **Live is the truth; recorded state is a cache.** A diff against the cache
-   cannot see a console edit, or a write the provider accepted and ignored.
-2. **Every setting is a decision.** A vendor default nobody chose is an
-   accident, and an input the program never declares is invisible to every
-   diff.
-3. **The organization was there first.** A program adopts it. A program never
-   owns whether the organization exists.
-4. **A singleton has no rehearsal.** The plan is the rehearsal, so the plan a
-   human read is the plan that runs.
-5. **A program must not lock out its own apply lane,** and the way back must
-   not depend on the program.
-6. **A credential is never data.** A value a program records is a value every
-   reader of its state can read.
+1. **Live is the truth.** The tool's state is its notes, and notes go stale.
+2. **Every setting is a decision.** A default nobody chose is an accident
+   that no plan will ever show.
+3. **The organization came first.** Code adopts it, and never owns whether it
+   exists.
+4. **There is no staging copy.** The plan is the only rehearsal, so the plan
+   a human approved is the only thing that runs.
+5. **What the tool records, every reader of its state can read.** A
+   credential is never something it records.
+6. **The organization hosts its own pipeline.** A change must never be able
+   to block the fix for itself.
 
-## 4. The registry
+## 4. Decide every setting
 
-1. An implementation MUST keep one registry of every program. An entry MUST
-   carry the program's class (§8.1), its environments, its credentials, and
-   its drift contract (§6). Each field MUST be set explicitly; a defaulted
-   field lets an omission decide. The providers a program manages MAY be
-   derived from the program's declared dependencies rather than repeated.
-2. The lanes that plan, diff, apply and scan a program, and the program's
-   access to its recorded state, SHOULD be generated from the registry, so
-   that registering a program is what enrolls it everywhere.
-3. A gate MUST fail a program that is not registered. A gate MUST fail a
-   registered program that lacks a coverage set for any provider it manages
-   (§5), and an applied program that lacks a scheduled drift check (§6.3).
-4. The registry SHOULD also list every organization the company holds that no
-   program manages, each with its reason (no provider exists; the organization
-   is being retired). An inventory that starts from the programs cannot show
-   what has none.
+**Every setting the provider offers is either set in code or excluded with a
+reason, and a gate proves it.** A setting the code never mentions is
+invisible: if an admin changes it, or the vendor changes its default, no plan
+shows it.
 
-## 5. Declaration and coverage
+*Example.* The code sets `default_repository_permission`, with a comment
+saying why. It excludes `location` as "profile text, not policy".
+A provider upgrade adds a new setting, and the gate fails until someone sets
+it or excludes it.
 
-### 5.1 Declaration
-
-Every managed input MUST be declared as a typed value in the program. A value
-that departs from the provider's default, or whose reason is not obvious,
-SHOULD carry its reason beside it, where the next reader of the value sees it.
-
-A value an organization passes down to its members by default (to new
-accounts, new repositories, new workspaces) SHOULD also be declared on each
-member the program manages. Inheritance is a default, not a declaration: it
-changes when the parent setting or the vendor's behavior does, and no diff of
-the member shows it.
-
-### 5.2 The schema extract
-
-A program MUST vendor a schema extract for each provider it manages,
-generated by a script from the provider's published schema and stamped with
-the provider version. A gate MUST fail when the provider version changes and
-the extract was not regenerated. The extract is a lockfile, not a second
-source of truth: nobody edits it by hand.
-
-### 5.3 Coverage
-
-For every resource type in scope (§5.4), a gate MUST prove that each input is
-either declared by the program or listed as an exclusion with a reason.
-
-1. Every resource type in scope MUST be either managed or waived as a whole. A
-   waiver MUST carry a cause from a closed set (below). A cause that claims
-   the API refused or a paid plan gates SHOULD quote the API's own response.
-2. An input or type the extract holds and the program neither declares nor
-   excludes is unaccounted, and an unaccounted input MUST fail the gate. A
-   provider upgrade that adds an input therefore fails until someone decides
+1. Every setting the program manages MUST be set in code as a typed value.
+   Its reason SHOULD sit beside it, where the next reader of the value sees
    it.
-3. A type the program builds but does not declare, or declares but never
-   builds, MUST fail the gate. A waived type MUST NOT be built.
-4. A gate SHOULD pin the count of waivers, so that a new one is a visible
-   change rather than a quiet addition.
+2. The program MUST keep a copy of the provider's schema, generated by a
+   script and stamped with the provider version. The gate MUST fail when the
+   provider version changes and the copy was not regenerated. Nobody edits
+   the copy by hand.
+3. For every resource type in scope, the gate MUST fail on any setting that
+   is neither set in code nor excluded with a reason.
+4. Every resource type in scope MUST be either managed or skipped as a whole.
+   A skipped type MUST name a cause from the table below, and the code MUST
+   NOT create it. A cause that says the API refused or a paid plan gates it
+   SHOULD quote the API's response. The program keeps a list of the types it
+   manages. The gate MUST fail if the code creates a type missing from that
+   list, and if the list names a type the code never creates.
+5. Coverage SHOULD span the provider's whole schema when it is small enough
+   to audit. If a provider is too large to cover whole (a cloud provider can
+   have thousands of types), the program MUST list the types it covers fully
+   in a file the gate reads. That list SHOULD include every type controlling
+   identity, access, audit or policy. Drift checks alone catch the rest. The
+   coverage file SHOULD state what it does not prove, such as nested fields
+   inside a setting.
+6. A value the organization passes down by default (to new repositories, new
+   accounts) SHOULD also be set on each one. Inheritance changes when the
+   parent does, and no plan of the child shows it.
+7. When a program first takes over an organization, a human SHOULD decide
+   each setting one by one, from a recommended value, its reason and its
+   risk. A separate read-only check SHOULD then verify the recommendations
+   against how the provider really behaves.
 
-A waiver is a decision to declare nothing, which has no diff to review. The
-list is the only thing separating "reviewed and rejected" from "never
-considered", so each cause names what would lift it.
-
-| Cause | Lifts when |
+| A type is skipped because | It can be revisited when |
 |---|---|
 | the API refuses the write | the program's identity is granted more |
-| a paid plan gates it | the paid plan is bought |
+| a paid plan gates it | the plan is bought |
 | a provider defect | the provider ships a fix |
-| not applicable | the decision that made it so is revisited |
-| no settable inputs | never; there is nothing to declare |
+| it does not apply here | the reason it does not apply changes |
+| it has no settable fields | never |
 
-### 5.4 Scope and stated limits
+A skipped type is a decision to manage nothing, which leaves no diff to
+review. The list is the only thing separating "reviewed and rejected" from
+"never considered". A gate SHOULD pin how long the list is, so a new entry is
+a visible change.
 
-Coverage SHOULD span the provider's whole surface where it is small enough to
-audit. Where it is not, the program MUST write its scope down where the gate
-reads it: the types that carry identity, access, audit or policy under full
-coverage, and every other type it builds under drift detection only. The
-coverage file SHOULD also state its scope and its limits in its own text,
-because a gate's scope is invisible from outside it. A common limit is that
-coverage reaches top-level inputs only, so a nested default inside a declared
-structure is a decision of the code that builds it, never something the gate
-proved.
+## 5. Compare against live
 
-### 5.5 Review before the first declaration
+**Every plan, drift check and apply re-reads the real settings first.** The
+tool's state is its notes from last time. An edit in the console does not
+change the notes.
 
-When a program first takes over an organization, each input in scope SHOULD
-be reviewed one by one before it is declared: a recommended value, the reason,
-the risk, and a human's chosen value and note. The note becomes the reason of
-§5.1. A separate read-only check SHOULD verify the recommendations against
-the provider's real behavior and plan gating, because drafted recommendations
-carry plausible errors.
+*Example.* An admin changes `default_repository_permission` in the web
+console. The state still holds the old value. A plan that skips the re-read
+says "no changes", and an apply reports success having done nothing. A plan
+that re-reads shows the change, and the scheduled drift check goes red.
 
-### 5.6 Collections are complete
-
-A declared collection whose members grant access (members, teams,
-administrators, installed applications, accounts, repositories) SHOULD be
-complete: a census SHOULD compare the live members against the program and
-report each one the program does not declare. Drift detection alone cannot
-see a resource the program never declared.
-
-## 6. Drift against live
-
-1. Every diff MUST read live state before it compares: every plan, the
-   scheduled drift check, and the apply. An apply against recorded state
-   cannot revert a live-only change, and reports success having done nothing.
-2. The read MUST go through the provider configuration the program declares
-   now, never the one in recorded state. Otherwise a rotated credential is
-   never used, and a stale but valid one reads live as the wrong identity and
-   reports no drift.
-3. Every program MUST be diffed against live on a schedule. Drift MUST turn
-   the check red and be reported. A run that cannot reach a verdict MUST
-   report itself inconclusive, never green. The check MUST NOT revert on its
-   own: the edit may be a break-glass fix (§7.6).
-4. Drift is resolved by a change that adopts the live value into code, or by a
-   reviewed apply through the program's own lane that restores it. Recorded
-   state MUST NOT be edited by hand to hide drift. To resolve drift, the one
-   hand edit allowed removes a resource that no longer exists live, whose
-   failed read blocks every lane; it SHOULD follow the merge of the change
-   that removes the resource's declaration, because an apply in between
+1. Every plan, drift check and apply MUST re-read live before it compares.
+   Terraform's plan does this by default; Pulumi's needs `--refresh`.
+2. The re-read MUST use the credentials and provider settings the code
+   declares now. Some tools re-read with the ones saved in state, so a
+   rotated key is never used, and an old valid key can read live as the
+   wrong identity and miss drift.
+3. Every applied program MUST be checked for drift on a schedule. Drift MUST
+   turn the check red. A run that could not finish MUST say so, never pass.
+   The check MUST NOT undo the drift itself, because the edit may be an
+   emergency fix (§9.2).
+4. Drift is fixed by changing code to match live, or by a reviewed apply that
+   puts live back. State MUST NOT be edited by hand to hide drift. To fix
+   drift, one hand edit is allowed: removing a resource that no longer exists
+   and whose failed read blocks every job. It SHOULD follow the merge of the
+   change that stops declaring the resource, because an apply in between
    recreates it.
-5. A drift report SHOULD be one standing item that escalates rather than
-   repeats, and SHOULD notify again only when the drift changes. Recording the
-   revision last applied lets the report tell code ahead of live (an apply is
-   pending) from live moved away from code (drift).
-6. An instruction to ignore changes on an input MUST carry its reason, and
-   MUST NOT be relied on as a control: it suppresses the diff, not the read.
-   Where it covers a field the vendor changes on its own, it SHOULD carry the
-   date by which a human re-inspects it (§8.4).
-7. A fact the organization reports but no input sets (that every member has a
-   second factor; that a public repository accepts vulnerability reports)
-   SHOULD be a live assertion, failing closed in the plan, the apply and the
-   drift check alike. Each organization SHOULD prove its own baseline this
-   way; a baseline "covered by another account" is not proven for this one.
-8. A write to the organization's identity federation or access policy that
-   does not come from the apply lane SHOULD alert when it happens, not at the
-   next scheduled diff.
+5. Some facts can be read but not set: GitHub reports whether every member
+   has two-factor authentication, but the provider offers no setting to
+   require it. The program SHOULD check such facts with a live assertion
+   that runs during the plan, the apply and the drift check. Each
+   organization SHOULD prove its own baseline this way.
+6. An instruction to ignore changes on a setting MUST carry its reason. It is
+   not a control: the tool still reads the value, and only hides the
+   difference. One that covers a field the vendor changes on its own SHOULD
+   carry a date for a human to look again (§7.7).
+7. The drift report SHOULD be one standing item that escalates rather than
+   repeats, and SHOULD notify again only when the drift changes. Recording
+   the commit last applied lets it tell "an apply is pending" from "live
+   moved".
+8. A change to identity or access settings made outside the pipeline SHOULD
+   alert at once, not at the next scheduled check.
 
-## 7. Adoption, bootstrap and the boundary
+## 6. Adopt what already exists
 
-### 7.1 Adoption
+**The organization was there before the code. Code takes over what exists,
+and never recreates it.**
 
-A resource that exists live MUST be adopted, never recreated. The adoption
-SHOULD ride the program as a declared import that is a no-op once recorded
-state holds the resource, and a test SHOULD pin the imported identifiers.
-An adopted resource's inputs that only take effect at creation MUST be
-excluded with that reason.
+*Example.* Someone creates a repository in the web console. The next pull
+request declares it with an import: a Terraform `import` block, or Pulumi's
+`import` option. The plan shows the import and nothing else. From then on,
+the drift check covers the repository.
 
-### 7.2 Resources born by hand
+1. A resource that already exists MUST be adopted into the program, never
+   recreated. Its settings that only take effect at creation MUST be excluded
+   with that reason. The adoption SHOULD be an import written in code, which
+   does nothing once state holds the resource.
+2. A resource created by hand MUST be declared and adopted by the next
+   change. A test SHOULD pin the imported IDs.
+3. The hand steps before a program's first apply MUST be written down before
+   they run: creating the organization, the program's own identity and key,
+   and the state storage and its encryption key. Anything created by hand at
+   this stage SHOULD use exactly the settings the code declares.
+4. An import never fails on a mismatch: it records whatever is there. So the
+   first apply MUST follow a plan, read against live, with no delete, no
+   replace, and no kind of change the written steps do not name.
+   Anything else stops the apply. Until the first apply, state is
+   disposable. The written list of what to import SHOULD be generated from
+   the code and tested, so the two cannot disagree.
+5. The first apply SHOULD go in stages, with settings that change who may
+   merge or deploy applied last.
+6. Code describes what should exist, so it cannot say that something must
+   not. A vendor default nobody wants (a default network, a sample project)
+   SHOULD be removed once by a reviewed script that reads live, then kept out
+   by a live assertion (§5.5).
+7. Drift cannot see what code never declared. A census SHOULD list the live
+   members of every collection that grants access (members, administrators,
+   installed apps, accounts, repositories) and report each one the code does
+   not declare.
 
-Where a resource is born by hand (a new repository, a new account), because
-only a human may create it or because the program deliberately does not
-create that kind of resource, the human creates it, and the next change MUST
-declare and adopt it. A resource created by hand and never
-declared is ungoverned, and §5.6 is how it is found.
+## 7. Apply only what a human approved
 
-### 7.3 Vendor residue
+**There is no staging copy of an organization, so the plan is the only
+rehearsal. A human reads it, and the apply runs nothing else.**
 
-A program declares what should exist, so it cannot declare that something
-must not. Residue a vendor creates by default and the organization does not
-want (a default network, a default role, a sample project) SHOULD be removed
-once, by a reviewed sweep that reads live, and then forbidden by a live
-assertion (§6.7) so that it cannot return unseen.
+*Example.* A pull request changes a branch ruleset and merges. Someone starts
+the apply job from `main`. The job plans against live and pauses. An approver
+reads the plan and approves. Before applying, the job checks that its list of
+resources and actions matches the approved plan, and stops if it does not.
 
-### 7.4 Bootstrap
-
-The hand steps that precede a program's first apply (the organization, the
-program's own identity and its key, the state backend, the key that encrypts
-recorded state) MUST be written down before they run. A resource created by
-hand during bootstrap SHOULD be created with exactly the settings the program
-declares, then adopted like any other.
-
-An import does not fail on a mismatch: it records whatever live holds. The
-plan after the import is therefore the only check that live matches code,
-and the first apply MUST be preceded by one, read against live, with no
-delete, no replace, and no change outside the categories the runbook names.
-Anything else aborts. Until the first apply, recorded state is disposable.
-
-A first apply SHOULD be staged, with the resources that change who may merge
-or deploy applied last. A runbook's list of resources to import SHOULD be
-derived from the program and tested, so the two cannot disagree.
-
-### 7.5 Lockout
-
-A program MUST NOT apply a change that can block its own apply lane, or the
-change path into its own repository, without a reviewed way back. These
-shapes recur:
-
-| Shape | Why it locks out |
-|---|---|
-| requiring a status check that has never reported on that path | every change waits forever on a context that never arrives |
-| requiring an approval nobody can give | one maintainer cannot approve their own change |
-| a rule that blocks the program's own identity | the next apply cannot undo the rule |
-| the program manages the approval gate its own apply waits on | a bad plan can remove the human who would have stopped it |
-| a deny policy that also binds the recovery identity | the path back is closed by the change it was meant to undo |
-| a key policy that drops the account's own recovery access | recorded state, and everything it encrypts, becomes unreadable |
-
-A guardrail that denies SHOULD be applied only after the recovery path is
-proven to work live, first to one unit of the organization, probed, and then
-widened. A gate SHOULD assert, for every required check, that something
-reports it on every path to the default branch, a merge queue included.
-
-### 7.6 Break-glass
-
-A break-glass path MUST exist that does not depend on the program: an identity
-and a written procedure that can disable the offending control directly. The
-break-glass identity MUST NOT depend on an identity provider the program
-manages, SHOULD require a hardware second factor, SHOULD be guarded against
-deletion by plan (§8.3), and every use of it SHOULD alert. The path SHOULD be
-drilled on a schedule, with each drill declared in advance so it is recorded
-rather than paged. After break-glass, the next reviewed apply reconciles the
-organization to code, and the drift check of §6.3 reports the gap until it
-does.
-
-### 7.7 The boundary
-
-A program manages an organization's settings and policy. It never manages the
-content the organization holds: files in a repository, issues, tickets,
-messages. A program MUST keep a written list of what it deliberately does not
-manage, each with its reason. Four reasons recur:
-
-| Reason | Example shape |
-|---|---|
-| content changes in the ordinary course of work, so a diff carries no signal | issues, labels, releases, pull requests |
-| a person owns it, not the organization | a user's keys, the acceptance of an invitation |
-| the program's identity cannot reach it by construction | an endpoint served only to a user token |
-| managing it would create a second place deciding the same policy | a per-repository override of an organization-wide policy |
-
-An item with a security bearing that the program cannot reach SHOULD have a
-read-only verification, so the boundary is checked even where it is not
-declared.
-
-## 8. Classes and the apply path
-
-### 8.1 Classes
-
-Every program MUST carry exactly one class, decided by who owns it and how
-far a mistake reaches.
-
-| Class | What belongs | Its apply |
+| Class | What belongs in it | How it is applied |
 |---|---|---|
 | `app` | what one application owns | with that application's deploy |
-| `shared` | what several applications share, recoverable, reachable with a workload credential, with a real second instance to rehearse in | automatically to the rehearsal instance; to production after an approval |
-| `foundation` | an organization-wide trust, identity or audit boundary; a one-way door; anything that needs an organization credential | only as §8.2 |
+| `shared` | what several applications share, recoverable, with a real second copy to rehearse in | automatically to the rehearsal copy; to production after approval |
+| `foundation` | anything that needs an admin credential; anything organization-wide that controls trust, identity or audit; anything that cannot be undone | only as in item 3 |
 
-1. When two classes fit, the credential the apply needs decides. A program
-   that needs an organization credential is `foundation`, however routine it
-   feels.
-2. A class belongs to the program, never to an environment.
-3. An organization program is `foundation` unless a real second instance
-   exists to rehearse it in. Rehearsability never buys an automatically
-   applied lane an organization credential.
-4. Where an organization exists once per environment, every environment's
-   program SHOULD get the same lanes, gates and live assertions. Environments
-   differ only in values; a gate that exists in one environment and not the
-   other is a gap that the cheaper environment hides.
+1. Every program MUST have one class. When two fit, the credential the apply
+   needs decides: a program that needs an admin credential is `foundation`.
+   The class belongs to the program, never to an environment.
+2. An organization program is `foundation` unless a real second copy exists
+   to rehearse it in. Even then, §8.4 holds: a job that applies
+   automatically never holds the admin credential.
+3. A `foundation` program:
+   - MUST NOT apply on merge. It applies only when someone starts it from the
+     default branch.
+   - MUST plan in that job, against live, and pause for a human to approve.
+     The forge or the pipeline MUST enforce the pause, and an admin MUST NOT
+     be able to skip it.
+   - MUST apply from the commit that produced the approved plan. A gate MUST
+     refuse an apply whose resources or actions differ from that plan.
+     Applying the saved plan file itself is stricter, and SHOULD be used
+     where the tool supports it.
+   - MUST NOT plan from unmerged code (a pull request's, or any branch's),
+     because the plan runs with the admin credential.
+   - SHOULD check the plan against actions no approval allows (closing an
+     account, turning off audit logs). That check MUST fail when it cannot
+     read the plan.
+4. A `shared` or `app` program SHOULD show its plan, read against live, on
+   every pull request that touches it.
+5. A resource whose deletion cannot be undone (an account, a repository, a
+   membership) MUST be guarded against deletion by plan: by archive on
+   delete, deletion protection, or the tool's protect flag. Removing a
+   resource from code plans its delete, so state SHOULD be checked for what
+   the plan will delete before the code is removed. Renaming a resource in
+   code plans a delete and a create, so a test SHOULD pin every resource's
+   name.
+6. Where an organization exists once per environment, each SHOULD get the
+   same jobs, gates and checks. A check that exists in one and not the other
+   is a gap the cheaper one hides.
+7. A setting held below its intended value for a reason SHOULD carry the
+   trigger to revisit it. A date trigger SHOULD fail the build on its date,
+   so a temporary concession cannot become permanent by being forgotten.
 
-### 8.2 The foundation apply
+## 8. Keep the admin credential out of state and out of pull requests
 
-A `foundation` program:
+**Whatever the tool records, every reader of its state can read. So a
+credential is never something the tool records, and code nobody has approved
+never reaches the admin credential.**
 
-1. MUST NOT apply on merge. It MUST apply only by an explicit dispatch from
-   the default branch.
-2. MUST produce its plan in that dispatch, read against live (§6), and MUST
-   show it to a human approver before applying. The approval MUST be a control
-   the forge or pipeline enforces, never a written instruction, and an
-   administrator MUST NOT be able to skip it.
-3. MUST apply from the revision that produced the approved plan. A gate MUST
-   compare the resources and operations about to apply against the approved
-   plan and refuse any difference. Applying the saved plan itself is stricter,
-   and SHOULD be preferred where the tool supports it.
-4. MUST NOT plan from unmerged code, because the plan runs with the
-   organization credential (§9.4).
-5. SHOULD judge the plan against a list of absolute actions that no approval
-   admits (closing an account, disabling an audit trail), and that judgement
-   MUST fail closed when it cannot read the plan.
+*Example.* A provider takes its API key as a configuration field. Some tools
+save that field in state, and then anyone who can read and decrypt state
+has the key.
+Passing the key through the job's environment instead keeps it out of state
+entirely.
 
-A `shared` or `app` program SHOULD show its plan, read against live, on every
-change that touches it.
+1. A credential MUST NOT be passed as a resource setting, or as a provider
+   field the provider marks secret. A setting whose value is itself a secret
+   MUST be declared write-only, and that declaration applied before the
+   first real value is written. A credential nothing needs to read back
+   SHOULD be created outside the program, straight into the secrets store. A
+   resource that would put a secret in state SHOULD be referenced by ID
+   rather than managed, with its settings checked by a live assertion.
+2. Where a provider makes item 1 impossible, the exception MUST be written
+   out beside the code, MUST be held by a test that fails if it widens, and
+   the credential MUST be treated as leaked when it rotates.
+3. Item 1 MUST be enforced three ways, because each misses what the others
+   catch: a scan of the code, using the provider's own list of secret fields;
+   a check that every program runs that scan; and a scan of what state
+   actually holds, which reports field paths, never values.
+4. Credentials are kept apart by job:
+   - A job that applies automatically MUST NOT hold an admin credential.
+   - A job that plans a pull request holds the weakest credential of all.
+   - Unmerged code (a pull request's, or any branch's) MUST NOT reach an
+     admin credential without the human approval of §7.
+   - Do not assume an approval environment limits which branch can run.
+     Unless that is proven, the credential's trust condition (for example,
+     the subject of an OIDC token) SHOULD name the default branch, and every
+     job that uses the credential SHOULD refuse to run for a pull request.
+   - A job MUST NOT be able to create a credential stronger than one it may
+     hold.
+   - The drift check SHOULD use a read-only credential.
+5. A job that plans pull requests runs code nobody has reviewed yet. It MUST
+   be able to read only the state of the programs registered for it to plan,
+   including any registered ahead of their first plan. A test MUST check that
+   access both ways: missing access is loud and harmless, extra access is
+   silent and is the leak. Encryption does not help when the reader holds the
+   key. Every other job SHOULD read only its own program's state.
+6. The admin credential SHOULD be an identity the organization owns rather
+   than a person's token, read at run time by a role that can read nothing
+   else. A credential SHOULD exist once per consumer, environment and
+   organization, named for its consumer. A rotation SHOULD verify the
+   new key by fingerprint, never by printing it, and retire the old one only
+   once it has gone quiet.
 
-### 8.3 Destructive changes
+## 9. Do not lock yourself out
 
-A resource whose deletion cannot be undone (an account, a repository, a
-membership, a domain) MUST be guarded against deletion by plan: by the
-provider's archive or retain-on-delete behavior, by deletion protection, or by
-the tool's protection flag. Protection refuses a planned delete; it does not
-stop a diff that reads live from finding the resource already gone. Removing
-a resource from a program is a delete, so recorded state SHOULD be checked
-for what the plan will delete before the declaration is removed. A test
-SHOULD pin every resource's logical name, because renaming one plans a delete
-and a create.
+**The organization hosts the repository and pipeline that manage it, so a
+bad change can block its own fix. Know the traps, and keep a way back that
+does not need the pipeline.**
 
-### 8.4 Concessions with a trigger
+*Example.* A ruleset makes a new status check required before anything has
+ever reported it. Every pull request now waits forever, including the one
+that would undo the ruleset.
 
-A setting held below its intended value for a reason SHOULD carry, beside the
-value, the trigger that reopens it. A date trigger SHOULD fail the build on
-its date, so a temporary concession cannot become permanent by being
-forgotten.
+| Trap | Why it locks you out |
+|---|---|
+| requiring a check that has never reported | every change waits on a result that never comes |
+| requiring an approval nobody can give | one maintainer cannot approve their own change |
+| a rule that blocks the program's own identity | the next apply cannot undo the rule |
+| the program manages the approval its own apply waits on | a bad plan can remove the person who would have stopped it |
+| a deny policy that also binds the recovery identity | the way back is closed by the change it was meant to undo |
+| a key policy that drops the account's own recovery access | state, and everything the key encrypts, becomes unreadable |
 
-## 9. Credentials and state
+1. A program MUST NOT apply a change that could block its own apply job, or
+   merges into its own repository, without a reviewed way back. A gate SHOULD
+   check that every required status check has something that reports it on
+   every path to the default branch, a merge queue included. A deny rule
+   SHOULD be applied only after the way back is tested live, first to one
+   part of the organization, and then widened.
+2. A break-glass path MUST exist that does not depend on the program: an
+   identity and written steps that can switch off the bad control directly.
+   It MUST NOT depend on an identity provider the program manages. It SHOULD
+   need a hardware second factor, SHOULD be protected from deletion by plan,
+   SHOULD alert on every use, and SHOULD be drilled on a schedule, each drill
+   announced in advance so it is recorded rather than paged. Afterwards
+   the next reviewed apply puts code back in charge, and the drift check
+   shows the gap until it does.
+3. A program MUST keep a written list of what it deliberately does not
+   manage, each with its reason. An item that matters for security but that
+   the program cannot reach SHOULD have a read-only check instead.
 
-1. **A credential is never an input.** A tool records every input of every
-   resource, so a value reaches recorded state if and only if it is an input.
-   A credential MUST NOT be carried by any resource input, or by any provider
-   configuration field the provider's schema marks secret. A credential the
-   plug-in reads from its own process environment is an input to nothing and
-   never lands. An input whose live value is itself the secret MUST be
-   declared write-only, and that declaration applied before the first real
-   value is written. A credential nothing needs to read back SHOULD be minted
-   outside the program, straight into the secrets store. A resource whose
-   secret would enter recorded state SHOULD be referenced by identifier rather
-   than managed, with its settings checked by a live assertion (§6.7).
-2. **An exception is bounded.** Where a provider makes §9.1 impossible, the
-   exception MUST be stated in full beside the code, MUST be bounded by a test
-   that fails if it widens, and the exposed credential MUST be treated as
-   compromised when it rotates.
-3. **The rule MUST be enforced in three layers,** because each is blind to
-   what the others see: a hermetic scan of the program, taking the
-   secret-field list from the installed provider so an upgrade arms it with no
-   human step; a registry check that no program skips the scan; and a
-   credentialed scan of what recorded state actually holds, reporting paths
-   and fingerprints, never values.
-4. **Credentials are separated by class.** A lane that applies automatically
-   MUST NOT hold an organization credential, and a lane that plans a change
-   holds the weakest credential of all. Unmerged code MUST NOT reach an
-   organization credential without passing the human approval of §8.2. An
-   approval environment is not a branch gate unless proven to be one, so the
-   credential's trust condition SHOULD name the default branch, and every lane
-   that enters the approval environment SHOULD refuse to run for a change. The
-   drift check SHOULD read live with a read-only credential. The organization
-   credential SHOULD be an identity the organization owns rather than a
-   person's token, read at apply time from a secrets store by a role that can
-   read nothing else. A lane MUST NOT be able to mint a credential stronger
-   than one it may hold. A credential SHOULD exist once per consumer,
-   environment and organization, and be named for its consumer, so a leak
-   names its source and a rotation touches one lane.
-5. **A lane that runs a change's code reads only what it plans.** Recorded
-   state holds every input, and a plan lane runs code nobody has reviewed yet.
-   Such a lane MUST be able to read only the recorded state of the programs
-   registered for it to plan, including any registered ahead of their first
-   plan, and a test MUST assert that grant in both directions: a missing grant
-   is loud and harmless, an extra one is silent and is the leak. Encryption is
-   not access control when the reader holds the key. Every other lane SHOULD
-   read only its own program's state.
-6. **Rotation proves before it retires.** A rotation SHOULD verify the new
-   value by a read-back fingerprint, never by printing it, and SHOULD retire
-   the old value only once the new one is seen in use and the old one has gone
-   quiet.
+| A program does not manage | Because | Example |
+|---|---|---|
+| content that changes in normal work | a diff of it carries no signal | issues, labels, releases, pull requests |
+| what a person owns | it belongs to them, not the organization | a user's keys, accepting an invitation |
+| what its identity cannot reach | the API serves it only to a person's token | which repositories a third-party app may see |
+| a second place deciding the same policy | the organization-wide setting stops being the answer | a per-repository override of an organization policy |
 
-## 10. Enforcement
+## 10. The registry
+
+**One list of every program, so that no program can skip the gates.**
+
+1. An implementation MUST keep one registry of every program. Each entry
+   MUST state the program's class, environments, credentials and drift
+   contract (which environments are checked against live, and which live
+   assertions run), each set explicitly, so no omission decides by default.
+   The providers a program uses MAY be derived from its declared
+   dependencies.
+2. The gate MUST fail a program that is not registered, a registered program
+   without a coverage gate for each provider it uses (§4), and an applied
+   program without a scheduled drift check (§5.3).
+3. The plan, drift, apply and scan jobs, and each program's access to state,
+   SHOULD be generated from the registry, so registering a program enrolls it
+   everywhere.
+4. The registry SHOULD also list every organization the company holds that no
+   program manages, with the reason. A list that starts from the programs
+   cannot show what has none.
+
+## 11. Enforcement
 
 A conforming implementation MUST reject each of the following.
 
-| Property | The gate rejects |
+| Rule | The gate rejects |
 |---|---|
-| Registry (§4) | an unregistered program; a registered program with no coverage set for a provider it manages; an applied program with no drift check |
-| Extract (§5.2) | a provider version change without a regenerated extract |
-| Coverage (§5.3) | an unaccounted input or type; a type built but not declared, or declared but not built; a built waived type; a waiver with no cause |
-| Drift (§6) | a diff, drift check or apply that does not read live through the declared configuration; drift, on the schedule; an inconclusive run reported green |
-| Foundation apply (§8.2) | an apply on merge; an apply not dispatched from the default branch; an apply whose revision, resources or operations differ from the approved plan; a plan judgement that cannot read the plan |
-| Credentials (§9) | a credential in a resource input or a secret provider field; an exception that widened; a program that skips the scan; a plan lane granted state it is not registered to plan |
+| Decide every setting (§4) | a schema copy older than the provider; a setting neither set nor excluded; a type neither managed nor skipped; a skipped type with no cause, or created by the code; a type created but missing from the managed list, or listed but never created |
+| Compare against live (§5) | a plan, drift check or apply that does not re-read live with the code's credentials; drift, on the schedule; an unfinished run reported as passing |
+| Apply only what was approved (§7) | a `foundation` apply on merge, or not started from the default branch; an apply whose commit, resources or actions differ from the approved plan; a plan check that cannot read the plan |
+| Credentials (§8) | a credential in a setting or a secret provider field; an exception that widened; a program that skips the scan; a pull request plan job that can read state it is not registered to plan |
+| Registry (§10) | an unregistered program; a registered program without a coverage gate per provider; an applied program without a drift check |
 
-A gate MUST assert only what the program and the organization's API report.
+A gate MUST assert only what the code and the organization's API report.
 Every failure message SHOULD name the fix.
 
-## 11. Conformance levels
+## 12. Conformance levels
 
-| Level | Name | Requires |
-|---|---|---|
-| 1 | **Declared** | §4.1, §5.1, §7.1, §7.2, §7.4 and §8.1: every organization a program manages is registered, adopted rather than created, and applied only by its lane |
-| 2 | **Proven** | Level 1, plus §4.3, §5.2 to §5.4, §6.1 to §6.4, §8.2 and §9.1 to §9.5: coverage is a gate, every diff reads live, a foundation apply runs only the approved plan's resources and operations, and no credential is data or reachable from unmerged code without approval |
-| 3 | **Sealed** | Level 2, plus §4.4, §5.6, §6.5 to §6.8, §7.3, §7.5 to §7.7, §8.3 and §8.4: every organization is accounted for, collections are complete, every organization proves its baseline live, lockout is analysed, break-glass is written, the boundary is listed, and deletion is guarded |
+| Level | Name | Requires | In short |
+|---|---|---|---|
+| 1 | **Declared** | §4.1, §6.1 to §6.4, §7.1, §7.2, §10.1 | every organization a program manages is registered, adopted rather than created, and applied only by its pipeline |
+| 2 | **Proven** | Level 1, plus §4.2 to §4.5, §5.1 to §5.4, §7.3, §8.1 to §8.5, §10.2 | every setting is decided, every check reads live, a `foundation` apply runs only what was approved, and no credential sits in state or within reach of a pull request |
+| 3 | **Sealed** | Level 2, plus §5.5 to §5.8, §6.6, §6.7, §7.5 to §7.7, §9, §10.4 | every organization is accounted for, every member is in code, every baseline is proven live, deletion is guarded, and there is a tested way back |
 
-A level requires every MUST in the sections and items it lists. Where a listed
-item holds only SHOULDs, the level makes them requirements. An implementation
-claiming a level SHOULD say so beside its registry and name any requirement
-of the next level it does not yet meet.
+A level requires every MUST in the items it lists. Where a listed item holds
+only SHOULDs, the level makes them requirements. An implementation claiming a
+level SHOULD say so beside its registry, and name there any requirement of
+the next level it does not yet meet.
 
-## 12. Operational considerations
+## 13. Operational considerations
 
-### 12.1 Provider upgrades
-
-An upgrade regenerates the extract, and every new input fails coverage until
-someone declares or excludes it. The upgrade is therefore a review of the new
-settings, never a version bump alone.
-
-### 12.2 A write the provider accepts and ignores
-
-Some APIs return success and keep the old value, or write back a concrete
-value for an input the program excluded. Only a diff that reads live shows
-either; recorded state shows the value the program sent.
-
-### 12.3 Settings a paid plan gates
-
-A setting the organization's paid plan does not include is waived or
-excluded with that cause. Changing paid plans reopens every such entry as a
-decision; it does not apply the vendor's default for the new paid plan by
-itself.
-
-### 12.4 Moving a resource between programs
-
-Moving a resource from one program or provider instance to another is a move
-in recorded state, reviewed like an apply. It is never a delete in one
-program and a create in the other: for a singleton, that delete is the
-outage.
-
-### 12.5 People joining and leaving
-
-Membership is declared, so removing a person from code removes them from the
-organization. A provider option that downgrades rather than removes a member
-on delete keeps access that no declaration explains, and SHOULD be off.
+| Situation | What to do |
+|---|---|
+| A paid plan changes | Every setting skipped or excluded because of the plan is a decision again. Changing plans does not apply the new plan's defaults by itself |
+| Moving a resource to another program | Move it in state, and review the move like an apply. Never delete it in one program and create it in the other: for a singleton, that delete is the outage |
+| A person leaves | Removing them from code removes them from the organization. A provider option that downgrades instead of removing keeps access that no line of code explains, and SHOULD be off |
 
 ## Appendix A (non-normative): the reference implementation
 
-The reference implementation is a private repository. It manages each of
-its organizations as a registered program, most at the `foundation` class; an
-organization with a full second instance to rehearse in applies as `shared`
-(§8.1). Its shape:
+The reference implementation is a private repository. It manages each of its
+organizations as a registered program, most at the `foundation` class. An
+organization with a full second copy to rehearse in is applied as `shared`.
 
 | Part | Implements |
 |---|---|
-| the registry, with each program's class, environments and drift contract, and a test enrolling every program | §4 |
-| a function per area returning typed inputs, with the reason at each value | §5.1 |
-| a regeneration script and a vendored, version-stamped extract per provider | §5.2 |
-| a coverage file per provider: declared inputs, exclusions with reasons, waivers with typed causes, and the scope | §5.3, §5.4 |
-| a scheduled drift lane that reads live through the declared configuration and keeps one standing report | §6 |
-| live assertions the program runs in plan, apply and drift | §6.7 |
-| runbooks: bootstrap, adding a resource born by hand, break-glass, what a program does not manage | §7 |
-| a dispatch-only apply lane with a required approval, a judgement of the plan against absolute actions, and a guard comparing the apply's resources and operations to the approved plan | §8.2 |
-| a hermetic secret-field scan, its registration check, a credentialed scan of recorded state, and a test of the plan lane's state grant in both directions | §9 |
+| the registry, with each program's class, environments, credentials and drift contract, and a test enrolling every program | §10 |
+| per provider: a schema regeneration script, the versioned schema copy, and a coverage file listing set settings, exclusions with reasons, skipped types with causes, and the scope | §4 |
+| a scheduled drift job that re-reads live with the code's credentials and keeps one standing report | §5 |
+| live assertions run in plan, apply and drift | §5.5 |
+| runbooks for bootstrap, adding a resource created by hand, and break-glass | §6, §9 |
+| a `foundation` apply job started by hand, paused for a required approval, checked against forbidden actions, and refused if its resources and actions differ from the approved plan | §7 |
+| a secret-field scan of the code, a check that every program runs it, a scan of state, and a test of the pull request plan job's state access both ways | §8 |
 
 This repository is one of the resources it governs. An organization owner
-created the repository by hand; the next change declared it and adopted it by
-import (§7.2). Its settings, its rulesets and the required workflow of the
-[append-only-adr](../append-only-adr/SPEC.md) spec's reference
-implementation are declared there, and the drift lane reports a console edit
-to any of them. The live result is public on the forge's API:
+created the repository by hand, and the next change declared it and imported
+it (§6.2). Its settings, its rulesets and the required workflow of the
+[append-only-adr](../append-only-adr/SPEC.md) spec's reference implementation
+are declared there, and the drift check reports a console edit to any of
+them. Anyone can read the live result from GitHub's public API:
 `GET /repos/perimetercompute/specs/rules/branches/main`.
 
 The implementation claims Level 2. It does not meet Level 3, and does not
-publish which requirements it misses: a published list of where an
+publish which requirements it misses: a public list of where an
 organization's controls are incomplete is a map for an attacker.
 
 ## Appendix B (non-normative): one deployment
 
-One company, agents writing most of the code, the source-control organization
-under a program since 2026-07-23. Counts as of 2026-10-16.
+One company, agents writing most of the code, its GitHub organization under
+a program since 2026-07-23. Counts as of 2026-10-16.
 
 | | |
 |---|---|
 | Programs at the `foundation` class | 7 |
-| Records in the decision log that decide part of this mechanism, classified by reading each record's Decision | 51 |
-| Of those, superseded in whole or in part by a later record | 18 |
-| Resource types in the source-control provider's extract | 88 |
-| Of those, waived as a whole, each with a typed cause | 71 |
+| Decision records that set part of this mechanism, classified by reading each one | 51 |
+| Of those, later superseded in whole or in part | 18 |
+| Resource types in the GitHub provider's schema | 88 |
+| Of those, skipped as a whole, each with a cause | 71 |
 
 ## Appendix C (non-normative): relation to existing practice
 
-| | plan-and-apply infrastructure as code, as usually run | a settings-sync application | a posture scanner | this specification |
+| | Infrastructure as code, as usually run | A settings-sync app | A posture scanner | This specification |
 |---|---|---|---|---|
-| What it covers | the inputs someone thought to declare | the settings its file format names | the benchmark's checks | every input of the provider's schema, declared or excluded with a reason |
-| Drift | against recorded state, when a plan happens to run | reverted on the next event | reported against the benchmark, not against code | against live, on a schedule, reported and never auto-reverted |
-| Who creates the organization | often the program | a human | a human | a human; the program adopts it |
-| Review of a change to the organization | the plan, if someone reads it | the file change | none | a plan read against live, approved by a human, and applied exactly |
-| The organization credential | often in the pipeline's environment, sometimes in state | held by the application | read-only | never in state, and unreachable from unmerged code without approval |
+| What it covers | the settings someone thought to write | the settings its file format names | the benchmark's checks | every setting in the provider's schema, set or excluded with a reason |
+| Drift | against state, when a plan happens to run | reverted on the next event | reported against the benchmark, not against code | against live, on a schedule, reported and never auto-reverted |
+| Who creates the organization | often the code | a human | a human | a human; the code adopts it |
+| Review of a change | the plan, if someone reads it | the file change | none | a plan read against live, approved by a human, and applied exactly |
+| The admin credential | often in the pipeline's environment, sometimes in state | held by the app | read-only | never in state, and out of reach of a pull request without approval |
 
 None of those is wrong for what it was built to do. The difference is the
 organization: a singleton that existed before the code, edited in a console,
-hosting the pipeline that manages it, with the most powerful credential the
-company holds.
+hosting the pipeline that manages it, guarded by the most powerful credential
+the company holds.

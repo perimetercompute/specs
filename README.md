@@ -7,14 +7,14 @@ tool-agnostic, and says in its Appendix A how this repository demonstrates it.
 | Spec | What it specifies | Status | How this repository demonstrates it |
 |---|---|---|---|
 | [append-only-adr](append-only-adr/SPEC.md) | the human-ratified, append-only decision log for a repository that agents write | draft 1 | conforms at Level 2: its own decisions are records gated by the implementation it ships |
-| [org-as-code](org-as-code/SPEC.md) | declaring, adopting and gating the organizations, accounts and admin consoles everything else runs inside | draft 1 | governed: this repository is a resource of a private implementation at Level 2 |
+| [org-as-code](org-as-code/SPEC.md) | managing an organization's settings as code: adopted rather than recreated, every setting decided, and checked against live | draft 1 | governed: this repository is a resource of a private program at Level 2 |
 
 ## Adopting a spec
 
 | Spec | What an adopter copies or builds |
 |---|---|
 | append-only-adr | five paths: the rules document [`docs/adr/README.md`](docs/adr/README.md), the registry [`docs/adr/adr-manifest/`](docs/adr/adr-manifest), the gate [`tools/adr-gate.sh`](tools/adr-gate.sh), and the workflows [`adr-gate.yml`](.github/workflows/adr-gate.yml) and [`adr-gate-trusted.yml`](.github/workflows/adr-gate-trusted.yml). Then require the trusted workflow from the default branch, so a pull request cannot rewrite the check that judges it |
-| org-as-code | nothing to copy: the gates are specific to each provider. The spec's Enforcement table and Appendix A list the parts to build |
+| org-as-code | nothing to copy: the coverage gate reads each provider's own schema. Its §5 and Appendix A describe what to build |
 
 ## How a spec is written
 

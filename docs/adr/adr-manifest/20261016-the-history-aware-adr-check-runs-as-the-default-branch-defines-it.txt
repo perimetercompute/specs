@@ -1,0 +1,1 @@
+439d28eb06c889e08459412839dd593972bb4fc680a715e7aa77aaa701bdccb0  docs/adr/20261016-the-history-aware-adr-check-runs-as-the-default-branch-defines-it.md

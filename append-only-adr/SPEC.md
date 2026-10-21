@@ -347,10 +347,16 @@ This repository conforms at Level 2. Its own decisions are records in
 | `.github/workflows/adr-gate-trusted.yml` | the history-aware layer of §8.1 as the default branch defines it: the default branch's script, run against the change's tree with a read-only token on pull request and merge group, and required by an organization ruleset from the default branch |
 | `.github/workflows/adr-gate.yml` | the same layers from the change's own copy, plus the push leg of §8.1 and the awaiting-ratification comment of §6.4 |
 
-An adopter copies those five paths, requires the trusted workflow from the
-default branch, writes a first record from the template with `status:
-proposed`, registers it, and opens the change; it is red until a human
-ratifies it in their own words.
+An adopter copies the script, both workflows and the rules document, and in
+the same change writes a first record from the template with `status:
+proposed` and registers it. The record has to ride that change: the gate fails
+without the registry, and git cannot carry an empty directory. The change is
+red until a human ratifies the record in their own words and its status reads
+`accepted`. Only once that change has merged does the adopter require the
+trusted workflow from the default branch, because the trusted workflow runs
+the default branch's script, which does not exist there before the merge. The
+workflows name `main` as the push branch; an adopter whose default branch has
+another name edits that trigger.
 
 ## Appendix B (non-normative): one deployment after ten weeks
 

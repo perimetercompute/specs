@@ -63,6 +63,6 @@ Ratification: awaiting the decider's words on this pull request.
 
 ## References
 
-- Record-carrying PR: to be filled when the pull request opens
-- Implementing PR: the same
+- Record-carrying PR: https://github.com/perimetercompute/specs/pull/9
+- Implementing PR: https://github.com/perimetercompute/specs/pull/9
 - https://github.com/perimetercompute/specs/pull/8

@@ -1,74 +1,76 @@
 # Perimeter Compute specs
 
-How we operate our repositories and the organizations they run in, written as
-specifications other teams can adopt. Each spec is normative and
-tool-agnostic, and says in its Appendix A how this repository demonstrates it.
+Specifications for running a repository, and the organization around it, when
+AI agents write most of the changes.
 
-| Spec | What it specifies | Status | How this repository demonstrates it |
-|---|---|---|---|
-| [append-only-adr](append-only-adr/SPEC.md) | the human-ratified, append-only decision log for a repository that agents write | draft 1 | conforms at Level 2: its own decisions are records gated by the implementation it ships |
-| [org-as-code](org-as-code/SPEC.md) | the settings of an organization that agents operate, as code: adopted rather than recreated, every setting decided, and checked against live | draft 1 | governed: this repository is a resource of a private program at Level 2 |
+Each spec takes one thing that breaks once agents do the work and defines the
+mechanism that stops it. The specs use RFC 2119 keywords (MUST, SHOULD) and
+assume no particular tool, so you can implement one with the tools you
+already run.
+
+| Spec | The problem it solves | Status |
+|---|---|---|
+| **[Append-only ADRs](append-only-adr/SPEC.md)** (Architecture Decision Records) | Agents undo decisions nobody wrote down. Record each decision in a log that a human ratifies in their own words and that CI won't let anyone edit afterwards. | Draft 1 |
+| **[Organizations as code](org-as-code/SPEC.md)** | Agents can't safely change settings that live in web consoles. Manage the organization as code, decide every setting the provider offers, and check the code against what is live. | Draft 1 |
+
+The specs stand alone. Used together, a setting that trades something away,
+such as letting a bot merge without review, links to the ADR where a person
+chose it (org-as-code §8).
 
 ## Adopting a spec
 
-| Spec | What an adopter copies or builds |
-|---|---|
-| append-only-adr | five paths: the rules document [`docs/adr/README.md`](docs/adr/README.md), the registry [`docs/adr/adr-manifest/`](docs/adr/adr-manifest), the gate [`tools/adr-gate.sh`](tools/adr-gate.sh), and the workflows [`adr-gate.yml`](.github/workflows/adr-gate.yml) and [`adr-gate-trusted.yml`](.github/workflows/adr-gate-trusted.yml). Then require the trusted workflow from the default branch, so a pull request cannot rewrite the check that judges it |
-| org-as-code | nothing to copy: the coverage gate reads each provider's own schema. Its §5 and Appendix A describe what to build |
+Read the spec, choose a conformance level, and build it however suits you.
+Each spec defines its levels so you can say exactly which one you meet, for
+example "Level 2: CI enforces the log".
 
-The specs meet at the decision log. A setting that trades something away
-cites the record that decided it, and this repository is governed under both.
+### Append-only ADRs
 
-```mermaid
-flowchart LR
-    org["org-as-code<br/><i>an organization's settings, as code</i>"] -- "a trade-off cites<br/>its record (§8)" --> adr["append-only-adr<br/><i>decisions, as frozen records</i>"]
-    adr -- "its shipped gate judges<br/>this repository's records" --> repo["this repository"]
-    org -- "a private program manages<br/>this repository's settings" --> repo
-    classDef frozen fill:#1d9e7533,stroke:#0f6e56,stroke-width:2px
-    class adr frozen
+This repository ships a working implementation for GitHub Actions. To use it:
+
+1. In one pull request, copy [`tools/adr-gate.sh`](tools/adr-gate.sh), the
+   two workflows [`adr-gate.yml`](.github/workflows/adr-gate.yml) and
+   [`adr-gate-trusted.yml`](.github/workflows/adr-gate-trusted.yml), and the
+   rules and template in [`docs/adr/README.md`](docs/adr/README.md). Leave our
+   records and their manifest entries behind.
+2. In the same pull request, write your first record from the template with
+   `status: proposed` and register it:
+   `shasum -a 256 docs/adr/<id>.md > docs/adr/adr-manifest/<id>.txt`.
+   The gate stays red while the record is `proposed`.
+3. A human approves the record in their own words. Quote them under Human
+   intent, set `status: accepted`, re-run the `shasum` line, and merge.
+4. Now require `adr-gate-trusted` with an organization ruleset. It runs the
+   gate as your default branch has it, so a pull request can't rewrite the
+   check that judges it.
+
+The workflows assume your default branch is `main`; change the `push` trigger
+in `adr-gate.yml` if yours isn't.
+
+### Organizations as code
+
+There is nothing to copy: our implementation is private. Appendix A of the
+spec describes its shape:
+a coverage file per provider built from the provider's own schema, a gate
+that fails on any setting neither set nor excluded with a reason, and a
+scheduled check against the live settings.
+
+## This repository uses its own specs
+
+Its decisions are records in [`docs/adr/`](docs/adr), checked in CI by
+the implementation above. Its GitHub settings and rulesets are managed
+by our org-as-code implementation, and you can read the live rules yourself:
+
+```sh
+curl https://api.github.com/repos/perimetercompute/specs/rules/branches/main
 ```
-
-## How a spec is written
-
-Every spec has the same shape, so a reader who knows one can scan the next.
-
-| Section | Carries |
-|---|---|
-| Status table | the edition, the conformance keywords (RFC 2119), and where the reference implementation lives |
-| 1. The problem | what breaks without the spec, and the shape of the answer as a diagram |
-| 2. Terms | the terms the requirements use, in one table |
-| 3. Principles | the few rules that decide a case the requirements are silent on |
-| Requirements | numbered sections of MUST and SHOULD, each with its reason. A section may open with its rule in one bold sentence and a non-normative example |
-| Enforcement | what a conforming gate rejects, one row per property |
-| The bridge | how the spec's artifacts cite the decision log; the top level requires it |
-| Conformance levels | named levels, each a set of sections, so an adopter can claim one honestly |
-| Operational considerations | what happens in practice: upgrades, reverts, renames, redaction |
-| Appendix A | the reference implementation, and how this repository demonstrates the spec |
-| Appendix B | one deployment's counts |
-| Appendix C | how the spec relates to existing practice |
-
-The appendices are non-normative. Structure goes in a table or a diagram, and
-prose carries what a visual cannot. The order of work for writing one, and
-where each rule lives, is the runbook
-[`.claude/skills/writing-a-spec/SKILL.md`](.claude/skills/writing-a-spec/SKILL.md).
-
-## What is published here
-
-Mechanisms: how a thing is written down, gated, versioned or reviewed, stated
-so another team can adopt it without learning what we decided. Never a
-decision's content, and never the operating playbook. The test and its
-reasoning are in the record
-[`20261006-mechanisms-are-published-decisions-and-the-operating-playbook-are-not`](docs/adr/20261006-mechanisms-are-published-decisions-and-the-operating-playbook-are-not.md).
 
 ## Changing a spec
 
-A change to a spec is a decision. It rides a pull request together with a new
-record in [`docs/adr/`](docs/adr), which a human ratifies in their own words
-before the pull request can merge. CI fails a pull request that changes a
-`SPEC.md` without adding a record. This repository's decisions follow the
-[append-only-adr](append-only-adr/SPEC.md) spec; its rules as applied here are
-in [`docs/adr/README.md`](docs/adr/README.md).
+A change to a `SPEC.md` is a decision, so its pull request adds a new record
+to [`docs/adr/`](docs/adr) saying why. CI fails a spec change that adds no
+record, and keeps the pull request red until the record is `accepted`, which
+our rules allow only after a maintainer approves it in their own words. [CONTRIBUTING.md](CONTRIBUTING.md) covers what belongs
+here and how a spec is laid out.
 
 ## License
 
-[MIT](LICENSE).
+[MIT](LICENSE)

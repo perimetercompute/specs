@@ -1,75 +1,88 @@
 # Perimeter Compute specs
 
-Specifications for running a repository, and the organization around it, when
-AI agents write most of the changes.
+Specifications for repositories, and the organizations that own them, where AI
+agents write most of the changes.
 
-Each spec takes one thing that breaks once agents do the work and defines the
-mechanism that stops it. The specs use RFC 2119 keywords (MUST, SHOULD) and
-assume no particular tool, so you can implement one with the tools you
-already run.
+Each spec solves one problem. You can use a spec with the tools that you use
+now. The specs use the RFC 2119 keywords MUST and SHOULD.
 
-| Spec | The problem it solves | Status |
-|---|---|---|
-| **[Append-only ADRs](append-only-adr/SPEC.md)** (Architecture Decision Records) | Agents undo decisions nobody wrote down. Record each decision in a log that a human ratifies in their own words and that CI won't let anyone edit afterwards. | Draft 1 |
-| **[Organizations as code](org-as-code/SPEC.md)** | Agents can't safely change settings that live in web consoles. Manage the organization as code, decide every setting the provider offers, and check the code against what is live. | Draft 1 |
+| Spec | Problem | Solution | Status |
+|---|---|---|---|
+| **[Append-only ADRs](append-only-adr/SPEC.md)** (Architecture Decision Records) | Agents change decisions that nobody wrote down. | Write each decision as a record in a log. A person approves each record in their own words. After the merge, CI does not let anyone change the record. | Draft 1 |
+| **[Organizations as code](org-as-code/SPEC.md)** | Agents cannot safely change settings in a web console. | Keep the settings of the organization in code. Make a decision about each setting. On a schedule, compare the code with the live settings. | Draft 1 |
 
-The specs stand alone. Used together, a setting that trades something away,
-such as letting a bot merge without review, links to the ADR where a person
-chose it (org-as-code §8).
+You can use one spec without the other.
 
-## Adopting a spec
+## Adopt a spec
 
-Read the spec, choose a conformance level, and build it however suits you.
-Each spec defines its levels so you can say exactly which one you meet, for
-example "Level 2: CI enforces the log".
+1. Read the spec.
+2. Select a conformance level. Each spec has levels, so you can say which
+   level you meet.
+3. Build the spec with your own tools.
 
 ### Append-only ADRs
 
-This repository ships a working implementation for GitHub Actions. To use it:
+This repository has an implementation for GitHub Actions. To use it, do these
+steps:
 
-1. In one pull request, copy [`tools/adr-gate.sh`](tools/adr-gate.sh), the
-   two workflows [`adr-gate.yml`](.github/workflows/adr-gate.yml) and
-   [`adr-gate-trusted.yml`](.github/workflows/adr-gate-trusted.yml), and the
-   rules and template in [`docs/adr/README.md`](docs/adr/README.md). Leave our
-   records and their manifest entries behind.
-2. In the same pull request, write your first record from the template with
-   `status: proposed` and register it:
-   `shasum -a 256 docs/adr/<id>.md > docs/adr/adr-manifest/<id>.txt`.
-   The gate stays red while the record is `proposed`.
-3. A human approves the record in their own words. Quote them under Human
-   intent, set `status: accepted`, re-run the `shasum` line, and merge.
-4. Now require `adr-gate-trusted` with an organization ruleset. It runs the
-   gate as your default branch has it, so a pull request can't rewrite the
-   check that judges it.
+1. Make a pull request. Copy these files into it:
+   - [`tools/adr-gate.sh`](tools/adr-gate.sh)
+   - [`.github/workflows/adr-gate.yml`](.github/workflows/adr-gate.yml)
+   - [`.github/workflows/adr-gate-trusted.yml`](.github/workflows/adr-gate-trusted.yml)
+   - [`docs/adr/README.md`](docs/adr/README.md), which has the rules and the
+     record template
 
-The workflows assume your default branch is `main`; change the `push` trigger
-in `adr-gate.yml` if yours isn't.
+   Do not copy our records or their manifest entries.
+2. In the same pull request, write your first record from the template. Set
+   `status: proposed`.
+3. Add the hash of the record to the manifest:
+
+   ```sh
+   shasum -a 256 docs/adr/<id>.md > docs/adr/adr-manifest/<id>.txt
+   ```
+
+   The gate fails while the status is `proposed`. This is correct.
+4. Ask a person to approve the record. Copy their words into the Human intent
+   section.
+5. Set `status: accepted`. Run the `shasum` command again. Merge the pull
+   request.
+6. Add an organization ruleset that requires `adr-gate-trusted`. This workflow
+   runs the gate from your default branch, so a pull request cannot change the
+   check.
+
+If your default branch is not `main`, change the `push` trigger in
+`adr-gate.yml`.
 
 ### Organizations as code
 
-There is nothing to copy: our implementation is private. Appendix A of the
-spec describes its shape:
-a coverage file per provider built from the provider's own schema, a gate
-that fails on any setting neither set nor excluded with a reason, and a
-scheduled check against the live settings.
+Our implementation is private, so you cannot copy it. Appendix A of the spec
+shows its parts:
+
+- A coverage file for each provider, made from the provider's schema.
+- A gate that fails if a setting is not in code and has no written reason for
+  its exclusion.
+- A scheduled check that compares the code with the live settings.
 
 ## This repository uses its own specs
 
-Its decisions are records in [`docs/adr/`](docs/adr), checked in CI by
-the implementation above. Its GitHub settings and rulesets are managed
-by our org-as-code implementation, and you can read the live rules yourself:
+The decisions for this repository are records in [`docs/adr/`](docs/adr). The
+gate above checks them in CI. Our org-as-code implementation manages the
+GitHub settings of this repository. To see the live rules, run this command:
 
 ```sh
 curl https://api.github.com/repos/perimetercompute/specs/rules/branches/main
 ```
 
-## Changing a spec
+## Change a spec
 
-A change to a `SPEC.md` is a decision, so its pull request adds a new record
-to [`docs/adr/`](docs/adr) saying why. CI fails a spec change that adds no
-record, and keeps the pull request red until the record is `accepted`, which
-our rules allow only after a maintainer approves it in their own words. [CONTRIBUTING.md](CONTRIBUTING.md) covers what belongs
-here and how a spec is laid out.
+A change to a `SPEC.md` file is a decision. The pull request for the change
+must add a new record to [`docs/adr/`](docs/adr) that tells why. CI fails if
+there is no new record. CI also fails until the record has `status: accepted`.
+Our rules let an author set `accepted` only after a maintainer approves the
+record in their own words.
+
+For the scope of this repository and the sections of a spec, see
+[CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 

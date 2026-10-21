@@ -1,10 +1,11 @@
 # Perimeter Compute specs
 
-Specifications for repositories, and the organizations that own them, where AI
-agents write most of the changes.
+How Perimeter Compute builds and ships software with AI agents, written as
+specs that you can adopt.
 
-Each spec solves one problem. You can use a spec with the tools that you use
-now. The specs use the RFC 2119 keywords MUST and SHOULD.
+Each spec describes one mechanism and the problem that it solves. You can use
+a spec with the tools that you use now. The specs use the RFC 2119 keywords
+MUST and SHOULD.
 
 | Spec | Problem | Solution | Status |
 |---|---|---|---|

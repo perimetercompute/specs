@@ -105,7 +105,7 @@ jobs:
           if [ -n "$spec_changes" ]; then
             new_records="$(git diff --name-only --diff-filter=A "$base" HEAD -- ':(glob)docs/adr/2*.md')"
             if [ -z "$new_records" ]; then
-              echo "::error::a change to a spec rides a NEW record in docs/adr/ that says why (README, Changing a spec). Draft it status: proposed and the decider ratifies it on this PR:"
+              echo "::error::a change to a spec rides a NEW record in docs/adr/ that says why (CONTRIBUTING.md, Change a spec). Draft it status: proposed and the decider ratifies it on this PR:"
               echo "$spec_changes"; exit 1
             fi
           fi

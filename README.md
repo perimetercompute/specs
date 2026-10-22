@@ -9,10 +9,10 @@ you can implement them with the tools you already use.
 
 ## Specs
 
-| Spec | What it covers | Status |
-|---|---|---|
-| [append-only-adr](append-only-adr/SPEC.md) | Architecture decision records that a person approves and CI keeps from being edited | Draft 1 |
-| [org-as-code](org-as-code/SPEC.md) | Organization settings as code, with every setting decided and checked against the live organization | Draft 1 |
+| Spec | Problem | Solution | Status |
+|---|---|---|---|
+| [Append-only ADRs](append-only-adr/SPEC.md) | Agents undo decisions that nobody wrote down. | Each decision is a record that a person approves in their own words. CI blocks any edit to it after merge. | Draft 1 |
+| [Organizations as code](org-as-code/SPEC.md) | Agents cannot safely change settings in a web console, and nobody notices a setting left at its default. | Keep the organization's settings in code. Decide every setting, and check the code against the live organization. | Draft 1 |
 
 ## Using a spec
 
@@ -25,7 +25,8 @@ we publish one.
 
 We use these specs here. This repository's own decisions are records in
 [`docs/adr/`](docs/adr), checked by the append-only-adr reference
-implementation. Our org-as-code implementation manages its GitHub settings.
+implementation. Its GitHub settings are code in our private monorepo, managed
+under the org-as-code spec.
 
 ## Contributing
 

@@ -14,7 +14,7 @@ teaches it something, never ahead of one.
 
 | Question | Read |
 |---|---|
-| What shape every spec has | [README.md](../../../README.md), "How a spec is written" |
+| What shape every spec has | [CONTRIBUTING.md](../../../CONTRIBUTING.md), "The sections of a spec" |
 | What may be published, and what never | the record [`20261006-mechanisms-are-published-decisions-and-the-operating-playbook-are-not`](../../../docs/adr/20261006-mechanisms-are-published-decisions-and-the-operating-playbook-are-not.md) |
 | How every spec argues: a reason on every line, an exact enforcement table, a lifecycle as a diagram, shipped code in Appendix A. The published spec that shows this facet best | [append-only-adr/SPEC.md](../../../append-only-adr/SPEC.md) |
 | How every spec reads: a rule in one sentence then one example, flat sections, short sentences, a problem stated for agents. The published spec that shows this facet best | [org-as-code/SPEC.md](../../../org-as-code/SPEC.md) |

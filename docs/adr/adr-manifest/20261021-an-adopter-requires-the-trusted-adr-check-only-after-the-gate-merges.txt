@@ -1,0 +1,1 @@
+c55ef9ae9bc4b6716a2697f2ae63c74217f1017205c2c938cd61c796b78671d3  docs/adr/20261021-an-adopter-requires-the-trusted-adr-check-only-after-the-gate-merges.md

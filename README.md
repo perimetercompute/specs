@@ -1,74 +1,38 @@
 # Perimeter Compute specs
 
-How we operate our repositories and the organizations they run in, written as
-specifications other teams can adopt. Each spec is normative and
-tool-agnostic, and says in its Appendix A how this repository demonstrates it.
+How Perimeter Compute builds and ships software with AI agents, written as
+specs that you can adopt.
 
-| Spec | What it specifies | Status | How this repository demonstrates it |
+Each spec defines one mechanism: the problem it solves, what an
+implementation must do, and how to check it. The specs are tool-agnostic, so
+you can implement them with the tools you already use.
+
+## Specs
+
+| Spec | Problem | Solution | Status |
 |---|---|---|---|
-| [append-only-adr](append-only-adr/SPEC.md) | the human-ratified, append-only decision log for a repository that agents write | draft 1 | conforms at Level 2: its own decisions are records gated by the implementation it ships |
-| [org-as-code](org-as-code/SPEC.md) | the settings of an organization that agents operate, as code: adopted rather than recreated, every setting decided, and checked against live | draft 1 | governed: this repository is a resource of a private program at Level 2 |
+| [Append-only ADRs](append-only-adr/SPEC.md) | Agents undo decisions that nobody wrote down. | Each decision is a record that a person approves in their own words. CI blocks any edit to it after merge. | Draft 1 |
+| [Organizations as code](org-as-code/SPEC.md) | Agents cannot safely change settings in a web console, and nobody notices a setting left at its default. | Keep the organization's settings in code. Decide every setting, and check the code against the live organization. | Draft 1 |
 
-## Adopting a spec
+## Using a spec
 
-| Spec | What an adopter copies or builds |
-|---|---|
-| append-only-adr | five paths: the rules document [`docs/adr/README.md`](docs/adr/README.md), the registry [`docs/adr/adr-manifest/`](docs/adr/adr-manifest), the gate [`tools/adr-gate.sh`](tools/adr-gate.sh), and the workflows [`adr-gate.yml`](.github/workflows/adr-gate.yml) and [`adr-gate-trusted.yml`](.github/workflows/adr-gate-trusted.yml). Then require the trusted workflow from the default branch, so a pull request cannot rewrite the check that judges it |
-| org-as-code | nothing to copy: the coverage gate reads each provider's own schema. Its §5 and Appendix A describe what to build |
+Every spec has the same layout. Section 1 states the problem. The
+conformance levels let you adopt part of a spec and say which level you meet.
+Appendix A describes the reference implementation and how to copy it, where
+we publish one.
 
-The specs meet at the decision log. A setting that trades something away
-cites the record that decided it, and this repository is governed under both.
+## This repository
 
-```mermaid
-flowchart LR
-    org["org-as-code<br/><i>an organization's settings, as code</i>"] -- "a trade-off cites<br/>its record (§8)" --> adr["append-only-adr<br/><i>decisions, as frozen records</i>"]
-    adr -- "its shipped gate judges<br/>this repository's records" --> repo["this repository"]
-    org -- "a private program manages<br/>this repository's settings" --> repo
-    classDef frozen fill:#1d9e7533,stroke:#0f6e56,stroke-width:2px
-    class adr frozen
-```
+We use these specs here. This repository's own decisions are records in
+[`docs/adr/`](docs/adr), checked by the append-only-adr reference
+implementation. Its GitHub settings are code in our private monorepo, managed
+under the org-as-code spec.
 
-## How a spec is written
+## Contributing
 
-Every spec has the same shape, so a reader who knows one can scan the next.
-
-| Section | Carries |
-|---|---|
-| Status table | the edition, the conformance keywords (RFC 2119), and where the reference implementation lives |
-| 1. The problem | what breaks without the spec, and the shape of the answer as a diagram |
-| 2. Terms | the terms the requirements use, in one table |
-| 3. Principles | the few rules that decide a case the requirements are silent on |
-| Requirements | numbered sections of MUST and SHOULD, each with its reason. A section may open with its rule in one bold sentence and a non-normative example |
-| Enforcement | what a conforming gate rejects, one row per property |
-| The bridge | how the spec's artifacts cite the decision log; the top level requires it |
-| Conformance levels | named levels, each a set of sections, so an adopter can claim one honestly |
-| Operational considerations | what happens in practice: upgrades, reverts, renames, redaction |
-| Appendix A | the reference implementation, and how this repository demonstrates the spec |
-| Appendix B | one deployment's counts |
-| Appendix C | how the spec relates to existing practice |
-
-The appendices are non-normative. Structure goes in a table or a diagram, and
-prose carries what a visual cannot. The order of work for writing one, and
-where each rule lives, is the runbook
-[`.claude/skills/writing-a-spec/SKILL.md`](.claude/skills/writing-a-spec/SKILL.md).
-
-## What is published here
-
-Mechanisms: how a thing is written down, gated, versioned or reviewed, stated
-so another team can adopt it without learning what we decided. Never a
-decision's content, and never the operating playbook. The test and its
-reasoning are in the record
-[`20261006-mechanisms-are-published-decisions-and-the-operating-playbook-are-not`](docs/adr/20261006-mechanisms-are-published-decisions-and-the-operating-playbook-are-not.md).
-
-## Changing a spec
-
-A change to a spec is a decision. It rides a pull request together with a new
-record in [`docs/adr/`](docs/adr), which a human ratifies in their own words
-before the pull request can merge. CI fails a pull request that changes a
-`SPEC.md` without adding a record. This repository's decisions follow the
-[append-only-adr](append-only-adr/SPEC.md) spec; its rules as applied here are
-in [`docs/adr/README.md`](docs/adr/README.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md) for what belongs here, how to change a
+spec, and the layout every spec follows.
 
 ## License
 
-[MIT](LICENSE).
+[MIT](LICENSE)

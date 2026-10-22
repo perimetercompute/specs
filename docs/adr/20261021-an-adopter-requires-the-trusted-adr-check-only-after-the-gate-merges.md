@@ -1,7 +1,7 @@
 ---
 schema: 1
-status: proposed
-date: 2026-10-21
+status: accepted
+date: 2026-10-22
 deciders: [jacob-petterle]
 scope: append-only-adr
 supersedes: []
@@ -53,7 +53,11 @@ require the trusted workflow from the default branch. The appendix names the
 
 The search those words asked for found this paragraph.
 
-Ratification: awaiting the decider's words on this pull request.
+Ratification, after the decider had read this pull request's summary:
+
+> "merge bro"
+
+— Jacob ([@jacob-petterle](https://github.com/jacob-petterle)), pairing session (typed message), 2026-10-22
 
 ## Consequences
 

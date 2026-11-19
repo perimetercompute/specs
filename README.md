@@ -13,6 +13,7 @@ you can implement them with the tools you already use.
 |---|---|---|---|
 | [Append-only ADRs](append-only-adr/SPEC.md) | Agents undo decisions that nobody wrote down. | Each decision is a record that a person approves in their own words. CI blocks any edit to it after merge. | Draft 1 |
 | [Organizations as code](org-as-code/SPEC.md) | Agents cannot safely change settings in a web console, and nobody notices a setting left at its default. | Keep the organization's settings in code. Decide every setting, and check the code against the live organization. | Draft 1 |
+| [Operating a proactive agent](proactive-agent/SPEC.md) | An agent that acts for a person between their messages either asks about everything or acts where it should have asked. Its authority never changes. | Score every action by who sees it and whether it can be undone, and let the score decide who decides. Move that authority on a monthly record of the agent's calls. | Draft 1 |
 
 ## Using a spec
 

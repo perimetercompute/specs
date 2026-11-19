@@ -80,6 +80,7 @@ record; one ratified line of Human intent is enough.
 | Older record | Clause retired | Retired by |
 |---|---|---|
 | `20261006-the-adr-mechanism-is-published-as-a-spec-in-a-public-specs-repository` | "The repository itself conforms to every spec it publishes"; each spec now says in its Appendix A how this repository demonstrates it | `20261016-organizations-as-code-is-published-and-this-repository-demonstrates-it-as-a-governed-resource` |
+| `20261016-organizations-as-code-is-published-and-this-repository-demonstrates-it-as-a-governed-resource` | "each spec says in its Appendix A how this repository demonstrates it: as a conforming implementation the repository ships, or as a resource a conforming implementation governs" gains a third form: for a spec whose subject cannot run in a repository, what its reference implementation does here | `20261119-operating-a-proactive-agent-is-published-as-a-mechanism-and-its-values-stay-private` |
 
 ## When to write
 

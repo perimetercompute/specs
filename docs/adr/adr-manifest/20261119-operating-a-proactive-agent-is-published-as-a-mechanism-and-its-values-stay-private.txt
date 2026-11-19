@@ -1,1 +1,1 @@
-71c4e9ddc3b5af1de282d1efb4f5b3a6edab13c3ee4e42f2dc365293cec607e1  docs/adr/20261119-operating-a-proactive-agent-is-published-as-a-mechanism-and-its-values-stay-private.md
+a1bcc2009e00aea68a9b11fda2712f531600596cf5dfc9ec344aee556791232b  docs/adr/20261119-operating-a-proactive-agent-is-published-as-a-mechanism-and-its-values-stay-private.md

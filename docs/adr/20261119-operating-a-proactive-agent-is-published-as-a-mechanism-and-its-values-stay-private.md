@@ -130,7 +130,7 @@ Ratification: waiting for the decider's own words on the pull request.
 
 ## References
 
-- Record-carrying PR: none yet
-- Implementing PR: the same pull request adds `proactive-agent/SPEC.md`
+- Record-carrying PR: https://github.com/perimetercompute/specs/pull/11
+- Implementing PR: https://github.com/perimetercompute/specs/pull/11
 - [`20261006-mechanisms-are-published-decisions-and-the-operating-playbook-are-not`](https://github.com/perimetercompute/specs/blob/c7fe8c772b179e8ff2dcdc167f4eac5d7e55b08a/docs/adr/20261006-mechanisms-are-published-decisions-and-the-operating-playbook-are-not.md)
 - [`20261016-organizations-as-code-is-published-and-this-repository-demonstrates-it-as-a-governed-resource`](https://github.com/perimetercompute/specs/blob/c7fe8c772b179e8ff2dcdc167f4eac5d7e55b08a/docs/adr/20261016-organizations-as-code-is-published-and-this-repository-demonstrates-it-as-a-governed-resource.md)
